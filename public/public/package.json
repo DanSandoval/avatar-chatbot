@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "livekit-client": "^2.13.5",
+    "playwright": "^1.53.0"
+  }
+}

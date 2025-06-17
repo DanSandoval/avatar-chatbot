@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Avatar Demo</title>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #avatar-video { width: 100%; height: 400px; background: #000; }
+        button { padding: 10px 20px; margin: 10px 0; }
+        #status { color: #666; margin: 10px 0; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Simple Avatar Demo</h1>
+    <video id="avatar-video" autoplay></video>
+    <div id="status">Ready</div>
+    
+    <div id="step1">
+        <p>Step 1: Enter your HeyGen API Token</p>
+        <input type="text" id="api-token" placeholder="Your API token" style="width: 400px; padding: 5px;">
+        <button onclick="getSessionToken()">Get Session Token</button>
+    </div>
+    
+    <div id="step2" class="hidden">
+        <p>Step 2: Start Avatar</p>
+        <button onclick="startAvatar()">Start Avatar</button>
+    </div>
+    
+    <div id="step3" class="hidden">
+        <p>Step 3: Make Avatar Speak</p>
+        <input type="text" id="speak-text" placeholder="Text to speak" style="width: 300px; padding: 5px;">
+        <button onclick="makeSpeak()">Speak</button>
+    </div>
+
+    <!-- Use the index.cjs.js file instead -->
+    <script src="https://unpkg.com/@heygen/streaming-avatar@2.0.12/lib/index.cjs.js"></script>
+    <script>
+        // Wait for script to load
+        window.addEventListener('load', () => {
+            console.log('Available globals:', Object.keys(window).filter(k => k.toLowerCase().includes('heygen') || k.toLowerCase().includes('streaming') || k.toLowerCase().includes('avatar')));
+        });
+        
+        let sessionToken = null;
+        let avatar = null;
+        
+        function updateStatus(text) {
+            document.getElementById('status').textContent = text;
+        }
+        
+        async function getSessionToken() {
+            const apiToken = document.getElementById('api-token').value;
+            if (!apiToken) {
+                alert('Please enter your API token');
+                return;
+            }
+            
+            updateStatus('Getting session token...');
+            
+            try {
+                const response = await fetch('https://api.heygen.com/v1/streaming.create_token', {
+                    method: 'POST',
+                    headers: {
+                        'X-Api-Key': apiToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                sessionToken = data.data.token;
+                updateStatus('Got token! Now start avatar.');
+                
+                document.getElementById('step1').classList.add('hidden');
+                document.getElementById('step2').classList.remove('hidden');
+                
+            } catch (error) {
+                updateStatus('Error: ' + error.message);
+            }
+        }
+        
+        async function startAvatar() {
+            if (!sessionToken) {
+                alert('No session token');
+                return;
+            }
+            
+            updateStatus('Starting avatar...');
+            
+            try {
+                // Try different possible constructors
+                const HeyGenClass = window.HeyGenStreamingAvatar || window.StreamingAvatar || window.default || (window.StreamingAvatarSDK && window.StreamingAvatarSDK.StreamingAvatar);
+                
+                if (!HeyGenClass) {
+                    throw new Error('StreamingAvatar class not found. Check console for available globals.');
+                }
+                
+                avatar = new HeyGenClass({
+                    token: sessionToken,
+                    videoElement: document.getElementById('avatar-video')
+                });
+                
+                avatar.on('stream-ready', () => {
+                    updateStatus('Avatar ready!');
+                    document.getElementById('step2').classList.add('hidden');
+                    document.getElementById('step3').classList.remove('hidden');
+                });
+                
+                await avatar.createStartAvatar({
+                    quality: 'low',  // Use string instead of enum
+                    avatarName: 'josh_lite3_20230714'
+                });
+                
+            } catch (error) {
+                updateStatus('Error: ' + error.message);
+            }
+        }
+        
+        async function makeSpeak() {
+            const text = document.getElementById('speak-text').value;
+            if (!text || !avatar) return;
+            
+            try {
+                await avatar.speak({ text });
+                updateStatus('Speaking...');
+            } catch (error) {
+                updateStatus('Speak error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

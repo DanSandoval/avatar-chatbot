@@ -1,0 +1,5 @@
+{
+  "key": "YOUR_D-ID_API_KEY_HERE",
+  "url": "https://api.d-id.com",
+  "service": "talks"
+}

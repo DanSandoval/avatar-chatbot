@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D-ID AI Avatar Chatbot</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>AI Avatar Chatbot</h1>
+        <p class="subtitle">Chat with an AI-powered digital avatar</p>
+        
+        <div class="avatar-section">
+            <div id="video-wrapper">
+                <video id="talk-video" autoplay></video>
+                <div id="loading-indicator" class="hidden">
+                    <div class="spinner"></div>
+                    <p>Connecting to avatar...</p>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="connect-button" class="primary-button">
+                    <span class="button-text">Connect Avatar</span>
+                </button>
+                <button id="destroy-button" class="secondary-button" disabled>
+                    Disconnect
+                </button>
+            </div>
+        </div>
+        
+        <div class="chat-section">
+            <div id="chat-history"></div>
+            
+            <div class="input-section">
+                <input 
+                    type="text" 
+                    id="user-input" 
+                    placeholder="Type your message here..." 
+                    disabled
+                />
+                <button id="send-button" class="primary-button" disabled>
+                    Send
+                </button>
+            </div>
+        </div>
+        
+        <div id="status" class="status"></div>
+    </div>
+
+    <!-- Load D-ID streaming client -->
+    <script src="/streaming-client-api-fixed.js"></script>
+    <!-- Load our chat application -->
+    <script src="app.js"></script>
+</body>
+</html>

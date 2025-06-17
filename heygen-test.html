@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HeyGen Test</title>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #avatarVideo { width: 100%; height: 400px; background: #000; }
+        button { padding: 10px 20px; margin: 10px 0; }
+        input { padding: 5px; width: 400px; margin: 10px 0; }
+        #status { color: #666; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>HeyGen Avatar Test</h1>
+    
+    <div>
+        <label>API Token: <input type="text" id="apiToken" placeholder="Your HeyGen API token"></label>
+    </div>
+    
+    <button onclick="initializeAvatar()">Initialize Avatar</button>
+    <button onclick="speakText()" disabled id="speakBtn">Make Avatar Speak</button>
+    
+    <div id="status">Enter your API token and click Initialize</div>
+    
+    <div id="avatarVideo"></div>
+    
+    <div>
+        <input type="text" id="textInput" placeholder="Text for avatar to speak" disabled>
+    </div>
+
+    <script type="module">
+        // Import from Skypack CDN which handles ES modules properly
+        import StreamingAvatar from 'https://cdn.skypack.dev/@heygen/streaming-avatar@2.0.12';
+        
+        let avatar = null;
+        let sessionToken = null;
+        
+        window.updateStatus = (text) => {
+            document.getElementById('status').textContent = text;
+            console.log('Status:', text);
+        };
+        
+        window.initializeAvatar = async () => {
+            const apiToken = document.getElementById('apiToken').value;
+            if (!apiToken) {
+                alert('Please enter your API token');
+                return;
+            }
+            
+            try {
+                updateStatus('Getting session token...');
+                
+                // Get session token
+                const response = await fetch('https://api.heygen.com/v1/streaming.create_token', {
+                    method: 'POST',
+                    headers: {
+                        'X-Api-Key': apiToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(`Token error: ${response.status} - ${error}`);
+                }
+                
+                const data = await response.json();
+                sessionToken = data.data.token;
+                updateStatus('Got token, initializing avatar...');
+                
+                // Create avatar
+                const videoContainer = document.getElementById('avatarVideo');
+                avatar = new StreamingAvatar({ 
+                    token: sessionToken,
+                    videoElement: videoContainer
+                });
+                
+                avatar.on('stream-ready', () => {
+                    updateStatus('Avatar is ready! You can make it speak.');
+                    document.getElementById('speakBtn').disabled = false;
+                    document.getElementById('textInput').disabled = false;
+                });
+                
+                avatar.on('stream-disconnected', () => {
+                    updateStatus('Avatar disconnected');
+                });
+                
+                // Start avatar
+                await avatar.createStartAvatar({
+                    quality: 'low',
+                    avatarName: 'josh_lite3_20230714'
+                });
+                
+            } catch (error) {
+                updateStatus('Error: ' + error.message);
+                console.error('Full error:', error);
+            }
+        };
+        
+        window.speakText = async () => {
+            const text = document.getElementById('textInput').value || 'Hello! I am a digital avatar.';
+            
+            try {
+                updateStatus('Speaking...');
+                await avatar.speak({ text });
+                updateStatus('Done speaking');
+            } catch (error) {
+                updateStatus('Speak error: ' + error.message);
+            }
+        };
+    </script>
+</body>
+</html>

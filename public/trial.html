@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avatar Chatbot - Trial Mode</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .trial-notice {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .trial-notice h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        
+        #avatar-container {
+            width: 100%;
+            height: 400px;
+            background: #000;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #avatar-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        #token-input-container {
+            margin: 20px 0;
+        }
+        
+        #token-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #007bff;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        #status {
+            text-align: center;
+            color: #666;
+            margin: 10px 0;
+        }
+        
+        #chat-container {
+            margin-top: 20px;
+        }
+        
+        #messages {
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+        }
+        
+        .message {
+            margin: 10px 0;
+            padding: 8px 12px;
+            border-radius: 5px;
+        }
+        
+        .user-message {
+            background: #007bff;
+            color: white;
+            text-align: right;
+            margin-left: 20%;
+        }
+        
+        .assistant-message {
+            background: #e9ecef;
+            margin-right: 20%;
+        }
+        
+        #input-container {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #message-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .error {
+            color: red;
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .steps {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 10px 15px;
+            margin: 10px 0;
+        }
+        
+        .steps ol {
+            margin: 5px 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Avatar Chatbot - Trial Mode</h1>
+        
+        <div class="trial-notice">
+            <h3>🎯 Trial Mode Instructions</h3>
+            <div class="steps">
+                <ol>
+                    <li>Go to <a href="https://app.heygen.com/streaming-avatar" target="_blank">HeyGen Streaming Avatar</a></li>
+                    <li>Click "Try Now" to get a trial token</li>
+                    <li>Copy the entire token (starts with ey...)</li>
+                    <li>Paste it below and click "Start Session"</li>
+                </ol>
+            </div>
+            <p><strong>Note:</strong> Trial tokens are one-time use and limited to 3 concurrent sessions.</p>
+        </div>
+        
+        <div id="avatar-container">
+            <video id="avatar-video" autoplay></video>
+        </div>
+        
+        <div id="status">Enter your trial token to begin</div>
+        
+        <div id="token-input-container">
+            <input type="text" id="token-input" placeholder="Paste your HeyGen trial token here...">
+            <button id="start-button">Start Session</button>
+        </div>
+        
+        <div id="chat-container" class="hidden">
+            <div id="messages"></div>
+            <div id="input-container">
+                <input type="text" id="message-input" placeholder="Type your message..." disabled>
+                <button id="send-button" disabled>Send</button>
+            </div>
+        </div>
+        
+        <div id="error" class="error"></div>
+    </div>
+
+    <script type="module">
+        import StreamingAvatar, { AvatarQuality, TaskMode, TaskType } from 'https://unpkg.com/@heygen/streaming-avatar@latest/lib/index.js';
+        
+        let avatar = null;
+        let sessionId = null;
+        let ws = null;
+        
+        const statusEl = document.getElementById('status');
+        const errorEl = document.getElementById('error');
+        const messagesEl = document.getElementById('messages');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const startButton = document.getElementById('start-button');
+        const tokenInput = document.getElementById('token-input');
+        const chatContainer = document.getElementById('chat-container');
+        const tokenContainer = document.getElementById('token-input-container');
+        
+        function updateStatus(text) {
+            statusEl.textContent = text;
+            console.log('Status:', text);
+        }
+        
+        function showError(text) {
+            errorEl.textContent = text;
+            console.error('Error:', text);
+        }
+        
+        function addMessage(text, isUser) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
+            messageDiv.textContent = text;
+            messagesEl.appendChild(messageDiv);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+        
+        async function initializeSession() {
+            const token = tokenInput.value.trim();
+            if (!token) {
+                showError('Please paste your trial token');
+                return;
+            }
+            
+            try {
+                updateStatus('Creating session...');
+                startButton.disabled = true;
+                
+                // Register token with backend
+                const response = await fetch('/api/session/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to create session');
+                }
+                
+                const data = await response.json();
+                sessionId = data.sessionId;
+                
+                updateStatus('Initializing avatar...');
+                
+                // Initialize avatar with trial token
+                avatar = new StreamingAvatar({ token });
+                
+                avatar.on('stream-ready', () => {
+                    updateStatus('Avatar ready! You can start chatting.');
+                    connectWebSocket();
+                    tokenContainer.classList.add('hidden');
+                    chatContainer.classList.remove('hidden');
+                    messageInput.disabled = false;
+                    sendButton.disabled = false;
+                });
+                
+                avatar.on('stream-disconnected', () => {
+                    updateStatus('Avatar disconnected');
+                });
+                
+                // Create and start avatar
+                await avatar.createStartAvatar({
+                    quality: AvatarQuality.Low,
+                    avatarName: 'avatar_d77dc4afc71e4a5ebdcd1d3bab6ca71e',
+                    disableIdleTimeout: false
+                });
+                
+            } catch (error) {
+                showError('Failed to initialize: ' + error.message);
+                startButton.disabled = false;
+            }
+        }
+        
+        function connectWebSocket() {
+            const wsUrl = `ws://localhost:3000/api/chat?sessionId=${sessionId}`;
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+            };
+            
+            ws.onmessage = async (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'response') {
+                    addMessage(data.text, false);
+                    
+                    // Make avatar speak
+                    try {
+                        await avatar.speak({ 
+                            text: data.text,
+                            taskType: TaskType.TALK,
+                            taskMode: TaskMode.SYNC
+                        });
+                    } catch (error) {
+                        console.error('Avatar speak error:', error);
+                    }
+                } else if (data.type === 'error') {
+                    showError(data.message);
+                }
+            };
+            
+            ws.onerror = (error) => {
+                showError('WebSocket error');
+                console.error('WebSocket error:', error);
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                updateStatus('Chat disconnected');
+            };
+        }
+        
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            addMessage(text, true);
+            messageInput.value = '';
+            
+            ws.send(JSON.stringify({
+                type: 'message',
+                text: text
+            }));
+        }
+        
+        // Event listeners
+        startButton.addEventListener('click', initializeSession);
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Load token from URL if provided (for testing)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlToken = urlParams.get('token');
+        if (urlToken) {
+            tokenInput.value = urlToken;
+        }
+    </script>
+</body>
+</html>
