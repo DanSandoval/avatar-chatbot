@@ -125,27 +125,38 @@ class StreamingApiClient {
   }
   
   startKeepAlive() {
-    // Send a keepalive message every 20 seconds
+    // Monitor connection and restart if needed
     if (keepAliveInterval) {
       clearInterval(keepAliveInterval);
     }
     
+    let lastActivity = Date.now();
+    
+    // Update last activity on any speak
+    this._originalSpeak = this.speak.bind(this);
+    this.speak = async (text) => {
+      lastActivity = Date.now();
+      return this._originalSpeak(text);
+    };
+    
     keepAliveInterval = setInterval(() => {
-      if (peerConnection && peerConnection.connectionState === 'connected') {
-        // Send empty speak request as keepalive
-        console.log('Sending keepalive...');
-        fetch(`${streamingServiceUrl}/${streamId}/keepalive`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Basic ${DID_API.key}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ session_id: sessionId })
-        }).catch(err => {
-          console.log('Keepalive failed:', err.message);
-        });
+      if (peerConnection) {
+        const timeSinceActivity = Date.now() - lastActivity;
+        console.log(`Connection state: ${peerConnection.connectionState}, time since activity: ${Math.floor(timeSinceActivity/1000)}s`);
+        
+        // If disconnected or failed, notify handler
+        if (peerConnection.connectionState === 'disconnected' || 
+            peerConnection.connectionState === 'failed' ||
+            peerConnection.connectionState === 'closed') {
+          console.log('Connection lost, notifying handler');
+          if (this.connectionStateChangeHandler) {
+            this.connectionStateChangeHandler(peerConnection.connectionState);
+          }
+          clearInterval(keepAliveInterval);
+          keepAliveInterval = null;
+        }
       }
-    }, 20000); // Every 20 seconds
+    }, 5000); // Check every 5 seconds
   }
 
   async speak(text) {
