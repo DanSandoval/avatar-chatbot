@@ -28,6 +28,7 @@ class StreamingApiClient {
   constructor(config, videoElement) {
     this.videoElement = videoElement || document.getElementById('talk-video');
     this.configuration = config;
+    this.avatarUrl = null; // Will be set when connecting
     
     // Override API settings with provided config
     if (config) {
@@ -51,7 +52,7 @@ class StreamingApiClient {
     this.streamReadyHandler = handler;
   }
 
-  async connect() {
+  async connect(avatarUrl = null) {
     if (!DID_API || !DID_API.key) {
       throw new Error('API configuration not loaded');
     }
@@ -64,26 +65,57 @@ class StreamingApiClient {
       return;
     }
 
+    // Use provided avatar URL or default to Emma
+    this.avatarUrl = avatarUrl || "https://create-images-results.d-id.com/DefaultPresenters/Emma_f/v1_image.jpeg";
+
     stopAllStreams();
     closePC();
 
-    const sessionResponse = await fetch(`${streamingServiceUrl}`, {
+    console.log('Creating stream with:', {
+      avatarUrl: this.avatarUrl
+    });
+    
+    // Use our proxy to avoid CORS issues
+    const sessionResponse = await fetch('/api/streams/create', {
       method: 'POST',
       headers: {
-        Authorization: `Basic ${DID_API.key}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
-        source_url: "https://create-images-results.d-id.com/DefaultPresenters/Emma_f/v1_image.jpeg",
-        stream_warmup: true,
-        driver_url: "bank://lively"
+        source_url: this.avatarUrl
       })
+    }).catch(err => {
+      console.error('Fetch error:', err);
+      throw new Error('Network error: ' + err.message);
     });
 
-    const sessionData = await sessionResponse.json();
+    let sessionData;
+    try {
+      sessionData = await sessionResponse.json();
+    } catch (e) {
+      console.error('Failed to parse response:', e);
+      throw new Error(`Stream creation failed with status ${sessionResponse.status}`);
+    }
     
     if (!sessionResponse.ok) {
-      throw new Error(`Failed to create stream: ${sessionData.message || sessionResponse.statusText}`);
+      console.error('Stream creation failed:', sessionData);
+      let errorMsg = 'Failed to create stream';
+      
+      if (sessionData.description) {
+        errorMsg += ': ' + sessionData.description;
+      } else if (sessionData.message) {
+        errorMsg += ': ' + sessionData.message;
+      }
+      
+      // Add helpful message for common errors
+      if (errorMsg.includes('cannot download image')) {
+        errorMsg += '. Please check that the image URL is valid and accessible.';
+      } else if (sessionData.kind === 'InternalServerError' && errorMsg.includes('Stream Error')) {
+        errorMsg = 'Failed to create avatar. This usually means the image does not contain a detectable human face. Please use a photo with a clear, front-facing human face.';
+      }
+      
+      throw new Error(errorMsg);
     }
 
     streamId = sessionData.id;

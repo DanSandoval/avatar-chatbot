@@ -35,6 +35,106 @@ h1 {
     margin-bottom: 30px;
 }
 
+.avatar-config {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.avatar-config h3 {
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.avatar-options {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.avatar-options label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.avatar-options input[type="radio"] {
+    margin-right: 8px;
+}
+
+.avatar-selection {
+    margin-bottom: 20px;
+}
+
+#preset-avatar-select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    background: white;
+}
+
+.url-input {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.url-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.url-input.valid {
+    border-color: #10b981;
+}
+
+.url-input.invalid {
+    border-color: #ef4444;
+}
+
+small {
+    color: #666;
+    font-size: 12px;
+}
+
+.avatar-preview {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+}
+
+.avatar-preview img.loaded {
+    display: block;
+}
+
+.avatar-placeholder {
+    font-size: 48px;
+    color: #999;
+}
+
+.avatar-preview img.loaded + .avatar-placeholder {
+    display: none;
+}
+
 .avatar-section {
     margin-bottom: 30px;
 }

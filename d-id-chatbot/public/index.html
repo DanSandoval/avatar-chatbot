@@ -12,6 +12,54 @@
         <h1>AI Avatar Chatbot</h1>
         <p class="subtitle">Chat with an AI-powered digital avatar</p>
         
+        <div class="avatar-config">
+            <h3>Choose Your Avatar</h3>
+            <div class="avatar-options">
+                <label>
+                    <input type="radio" name="avatar-type" value="preset" checked>
+                    <span>Preset Avatar</span>
+                </label>
+                <label>
+                    <input type="radio" name="avatar-type" value="custom">
+                    <span>Custom Avatar (URL)</span>
+                </label>
+            </div>
+            
+            <div id="preset-avatars" class="avatar-selection">
+                <select id="preset-avatar-select">
+                    <option value="emma">Emma - Default D-ID Avatar</option>
+                </select>
+                <small>Note: Only Emma is currently available as a preset. Use custom URL for other avatars.</small>
+            </div>
+            
+            <div id="custom-avatar" class="avatar-selection hidden">
+                <input 
+                    type="url" 
+                    id="custom-avatar-url" 
+                    placeholder="https://example.com/your-avatar.jpg"
+                    class="url-input"
+                />
+                <small>Enter a direct URL to a JPG or PNG image with a <strong>human face</strong></small>
+                <div style="margin-top: 10px; padding: 10px; background: #fef3c7; border-radius: 5px;">
+                    <small><strong>⚠️ Requirements:</strong></small><br>
+                    <small>• Must be a real human face (no cartoons/animations)</small><br>
+                    <small>• Face should be clearly visible and front-facing</small><br>
+                    <small>• No sunglasses or face coverings</small>
+                </div>
+                <div style="margin-top: 10px;">
+                    <small><strong>Working Example URLs:</strong></small><br>
+                    <small style="cursor: pointer; color: #667eea;" onclick="document.getElementById('custom-avatar-url').value='https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?w=400'; document.getElementById('custom-avatar-url').dispatchEvent(new Event('input'))">• Professional Male</small><br>
+                    <small style="cursor: pointer; color: #667eea;" onclick="document.getElementById('custom-avatar-url').value='https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?w=400'; document.getElementById('custom-avatar-url').dispatchEvent(new Event('input'))">• Professional Female</small><br>
+                    <small style="cursor: pointer; color: #667eea;" onclick="document.getElementById('custom-avatar-url').value='https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?w=400'; document.getElementById('custom-avatar-url').dispatchEvent(new Event('input'))">• Casual Male</small>
+                </div>
+            </div>
+            
+            <div id="avatar-preview" class="avatar-preview">
+                <img id="avatar-preview-img" src="" alt="Avatar preview" />
+                <div class="avatar-placeholder">👤</div>
+            </div>
+        </div>
+        
         <div class="avatar-section">
             <div id="video-wrapper">
                 <video id="talk-video" autoplay></video>
@@ -52,6 +100,8 @@
 
     <!-- Load D-ID streaming client -->
     <script src="/streaming-client-api-fixed.js"></script>
+    <!-- Load avatar configuration -->
+    <script src="avatar-config.js"></script>
     <!-- Load our chat application -->
     <script src="app.js"></script>
 </body>

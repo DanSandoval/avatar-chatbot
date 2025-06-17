@@ -70,6 +70,39 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
+// Proxy D-ID stream creation to avoid CORS issues
+app.post('/api/streams/create', async (req, res) => {
+  try {
+    const apiConfig = require('./api.json');
+    const fetch = require('node-fetch');
+    
+    console.log('Stream creation request:', req.body);
+    
+    const response = await fetch('https://api.d-id.com/talks/streams', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${apiConfig.key}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(req.body)
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('D-ID API error:', response.status, data);
+      return res.status(response.status).json(data);
+    }
+    
+    console.log('Stream created successfully:', data.id);
+    res.json(data);
+  } catch (error) {
+    console.error('D-ID proxy error:', error);
+    res.status(500).json({ error: 'Failed to create stream' });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ 

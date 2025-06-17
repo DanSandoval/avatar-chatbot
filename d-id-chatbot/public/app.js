@@ -114,8 +114,11 @@ async function initializeStreamingClient() {
             }
         });
         
-        // Connect to streaming service
-        await streamingClient.connect();
+        // Get selected avatar URL
+        const avatarUrl = avatarSelector ? avatarSelector.getCurrentAvatar() : null;
+        
+        // Connect to streaming service with selected avatar
+        await streamingClient.connect(avatarUrl);
         
     } catch (error) {
         loadingIndicator.classList.add('hidden');
