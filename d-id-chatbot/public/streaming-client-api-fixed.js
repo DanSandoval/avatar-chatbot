@@ -19,6 +19,7 @@ let lastBytesReceived;
 let streamingServiceUrl = 'https://api.d-id.com/talks/streams';
 let isStreamReady = false;
 let dataChannel = null;
+let keepAliveInterval = null;
 
 const videoElement = document.getElementById('talk-video');
 videoElement.setAttribute('playsinline', '');
@@ -118,6 +119,33 @@ class StreamingApiClient {
     if (this.connectionStateChangeHandler) {
       this.connectionStateChangeHandler('connected');
     }
+    
+    // Start keepalive to prevent idle disconnection
+    this.startKeepAlive();
+  }
+  
+  startKeepAlive() {
+    // Send a keepalive message every 20 seconds
+    if (keepAliveInterval) {
+      clearInterval(keepAliveInterval);
+    }
+    
+    keepAliveInterval = setInterval(() => {
+      if (peerConnection && peerConnection.connectionState === 'connected') {
+        // Send empty speak request as keepalive
+        console.log('Sending keepalive...');
+        fetch(`${streamingServiceUrl}/${streamId}/keepalive`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Basic ${DID_API.key}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ session_id: sessionId })
+        }).catch(err => {
+          console.log('Keepalive failed:', err.message);
+        });
+      }
+    }, 20000); // Every 20 seconds
   }
 
   async speak(text) {
@@ -179,6 +207,12 @@ class StreamingApiClient {
       stopAllStreams();
       closePC();
       
+      // Stop keepalive
+      if (keepAliveInterval) {
+        clearInterval(keepAliveInterval);
+        keepAliveInterval = null;
+      }
+      
       if (this.connectionStateChangeHandler) {
         this.connectionStateChangeHandler('disconnected');
       }
@@ -191,27 +225,7 @@ class StreamingApiClient {
     if (!peerConnection) {
       peerConnection = new RTCPeerConnection({ iceServers });
       
-      // Create data channel for stream events
-      dataChannel = peerConnection.createDataChannel('JanusDataChannel', { ordered: true });
-      
-      dataChannel.addEventListener('open', () => {
-        console.log('Data channel opened');
-      });
-      
-      dataChannel.addEventListener('message', (event) => {
-        const [eventType, _] = event.data.split(':');
-        console.log('Stream event:', eventType);
-        
-        if (eventType === 'stream/ready') {
-          console.log('Stream is ready!');
-          setTimeout(() => {
-            isStreamReady = true;
-            if (this.streamReadyHandler) {
-              this.streamReadyHandler();
-            }
-          }, 1000); // 1 second delay for synchronization
-        }
-      });
+      // Don't create our own data channel - D-ID creates it
 
       peerConnection.addEventListener('iceconnectionstatechange', () => {
         if (this.connectionStateChangeHandler) {
@@ -238,9 +252,14 @@ class StreamingApiClient {
         }
       });
 
+      // Track if video has been set to avoid duplicates
+      let videoSet = false;
       peerConnection.addEventListener('track', (event) => {
-        const remoteStream = event.streams[0];
-        setVideoElement(remoteStream, this.videoElement);
+        if (!videoSet && event.streams && event.streams[0]) {
+          const remoteStream = event.streams[0];
+          setVideoElement(remoteStream, this.videoElement);
+          videoSet = true;
+        }
       });
       
       // Listen for data channel from remote peer
