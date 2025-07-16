@@ -3,99 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>D-ID AI Avatar Chatbot</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <title>Museum Paleontologist - Interactive Experience</title>
+    <link rel="stylesheet" href="style-modern.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦕</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <h1>AI Avatar Chatbot</h1>
-        <p class="subtitle">Chat with an AI-powered digital avatar</p>
-        
-        <div class="avatar-config">
-            <h3>Choose Your Avatar</h3>
-            <div class="avatar-options">
-                <label>
-                    <input type="radio" name="avatar-type" value="preset" checked>
-                    <span>Preset Avatar</span>
-                </label>
-                <label>
-                    <input type="radio" name="avatar-type" value="custom">
-                    <span>Custom Avatar (URL)</span>
-                </label>
-            </div>
-            
-            <div id="preset-avatars" class="avatar-selection">
-                <select id="preset-avatar-select">
-                    <option value="emma">Emma - Default D-ID Avatar</option>
-                </select>
-                <small>Note: Only Emma is currently available as a preset. Use custom URL for other avatars.</small>
-            </div>
-            
-            <div id="custom-avatar" class="avatar-selection hidden">
-                <input 
-                    type="url" 
-                    id="custom-avatar-url" 
-                    placeholder="https://example.com/your-avatar.jpg"
-                    class="url-input"
-                />
-                <small>Enter a direct URL to a JPG or PNG image with a <strong>human face</strong></small>
-                <div style="margin-top: 10px; padding: 10px; background: #fef3c7; border-radius: 5px;">
-                    <small><strong>⚠️ Requirements:</strong></small><br>
-                    <small>• Must be a real human face (no cartoons/animations)</small><br>
-                    <small>• Face should be clearly visible and front-facing</small><br>
-                    <small>• No sunglasses or face coverings</small>
+    <div class="museum-header">
+        <div class="museum-logo">
+            <img src="/images/thememos-logo.png" alt="Museum of Science" class="logo-img">
+            <h2>Museum of Science</h2>
+        </div>
+        <p class="exhibit-info">Paleontology Discovery Center</p>
+    </div>
+    
+    <div class="main-container">
+        <!-- Left Panel - Paleontologist Info and Avatar Setup -->
+        <div class="left-panel">
+            <div class="paleontologist-card">
+                <div class="paleontologist-profile">
+                    <h1>Meet Dr. Elias Grant</h1>
+                    <p class="credentials">Field Paleontologist & Paleoecologist</p>
+                    <p class="specialty">Mesozoic Ecosystem Expert</p>
+                    <p class="subtitle">Ready to dig up amazing dinosaur facts? Let's journey back 65 million years together!</p>
                 </div>
-                <div style="margin-top: 10px;">
-                    <small><strong>Working Example URLs:</strong></small><br>
-                    <small style="cursor: pointer; color: #667eea;" onclick="document.getElementById('custom-avatar-url').value='https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?w=400'; document.getElementById('custom-avatar-url').dispatchEvent(new Event('input'))">• Professional Male</small><br>
-                    <small style="cursor: pointer; color: #667eea;" onclick="document.getElementById('custom-avatar-url').value='https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?w=400'; document.getElementById('custom-avatar-url').dispatchEvent(new Event('input'))">• Professional Female</small><br>
-                    <small style="cursor: pointer; color: #667eea;" onclick="document.getElementById('custom-avatar-url').value='https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?w=400'; document.getElementById('custom-avatar-url').dispatchEvent(new Event('input'))">• Casual Male</small>
+                
+                <div id="avatar-preview" class="avatar-preview">
+                    <img id="avatar-preview-img" src="/images/dr-elias-grant-avatar.png" alt="Dr. Elias Grant" style="display: block;" />
                 </div>
             </div>
             
-            <div id="avatar-preview" class="avatar-preview">
-                <img id="avatar-preview-img" src="" alt="Avatar preview" />
-                <div class="avatar-placeholder">👤</div>
-            </div>
-        </div>
-        
-        <div class="avatar-section">
-            <div id="video-wrapper">
-                <video id="talk-video" autoplay></video>
-                <div id="loading-indicator" class="hidden">
-                    <div class="spinner"></div>
-                    <p>Connecting to avatar...</p>
+            <div class="avatar-config">
+                <h3>Connect with Dr. Grant</h3>
+                
+                <div class="controls">
+                    <button id="connect-button" class="primary-button">
+                        <span class="button-text">Start Call</span>
+                    </button>
+                    <button id="destroy-button" class="secondary-button" disabled>
+                        Disconnect
+                    </button>
                 </div>
             </div>
             
-            <div class="controls">
-                <button id="connect-button" class="primary-button">
-                    <span class="button-text">Connect Avatar</span>
-                </button>
-                <button id="destroy-button" class="secondary-button" disabled>
-                    Disconnect
-                </button>
+            <div class="fun-facts">
+                <h4>🦖 Fun Dinosaur Fact!</h4>
+                <p id="dino-fact">T-Rex arms were actually super strong - each arm could lift 400 pounds!</p>
             </div>
         </div>
         
-        <div class="chat-section">
-            <div id="chat-history"></div>
+        <!-- Right Panel - Video and Chat -->
+        <div class="right-panel">
+            <div class="avatar-section">
+                <div id="video-wrapper">
+                    <video id="talk-video" autoplay></video>
+                    <div id="loading-indicator" class="hidden">
+                        <div class="spinner"></div>
+                        <p>Connecting to Dr. Grant...</p>
+                    </div>
+                </div>
+            </div>
             
-            <div class="input-section">
-                <input 
-                    type="text" 
-                    id="user-input" 
-                    placeholder="Type your message here..." 
-                    disabled
-                />
-                <button id="send-button" class="primary-button" disabled>
-                    Send
-                </button>
+            <div class="chat-section">
+                <div id="chat-history"></div>
+                
+                <div class="input-section">
+                    <input 
+                        type="text" 
+                        id="user-input" 
+                        placeholder="Ask me about T-Rex, dinosaur fossils, or what Earth was like when dinosaurs lived!" 
+                        disabled
+                    />
+                    <button id="send-button" class="primary-button" disabled>
+                        Send
+                    </button>
+                </div>
             </div>
+            
+            <div id="status" class="status"></div>
         </div>
-        
-        <div id="status" class="status"></div>
     </div>
 
     <!-- Load D-ID streaming client -->

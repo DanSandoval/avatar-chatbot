@@ -1,0 +1,564 @@
+/* Modern CSS with Rich Colors */
+:root {
+    /* Rich Earth-Tone Palette */
+    --primary-sand: #D4A574;
+    --primary-fossil: #8B6914;
+    --primary-earth: #654321;
+    --primary-green: #228B22;
+    --primary-blue: #0d6efd;
+    --dark-header: #1a1a1a;
+    
+    /* Accent Colors */
+    --accent-amber: #FF8C00;
+    --accent-coral: #FF6347;
+    
+    /* Neutral Colors */
+    --white: #FFFFFF;
+    --off-white: #F8F8F8;
+    --light-gray: #E5E5E5;
+    --gray: #CCCCCC;
+    --dark-gray: #555555;
+    --black: #1a1a1a;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #8B7355 0%, #D2B48C 50%, #DEB887 100%);
+    min-height: 100vh;
+    color: var(--black);
+}
+
+/* Header */
+.museum-header {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    color: white;
+    padding: 12px 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.museum-header::after {
+    content: '🦕';
+    position: absolute;
+    right: 50px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2.5rem;
+    opacity: 0.15;
+}
+
+.museum-logo {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    padding-left: 30px;
+}
+
+.logo-img {
+    height: 35px;
+    width: auto;
+}
+
+.museum-logo h2 {
+    font-size: 1.75rem;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+}
+
+.exhibit-info {
+    text-align: left;
+    font-size: 0.85rem;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-top: 4px;
+    padding-left: 30px;
+}
+
+/* Main Layout */
+.main-container {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 0;
+    max-width: 1400px;
+    margin: 0 auto;
+    min-height: calc(100vh - 70px);
+    background: transparent;
+}
+
+/* Left Panel */
+.left-panel {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 24px;
+    border-right: 2px solid var(--primary-fossil);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Paleontologist Card */
+.paleontologist-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    border: 2px solid var(--primary-sand);
+}
+
+.paleontologist-profile h1 {
+    font-family: 'Playfair Display', serif;
+    color: var(--primary-earth);
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.credentials {
+    color: var(--primary-blue);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.specialty {
+    color: var(--primary-green);
+    font-weight: 500;
+    font-size: 0.8rem;
+    margin: 4px 0 12px;
+}
+
+.subtitle {
+    color: var(--dark-gray);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* Avatar Preview */
+.avatar-preview {
+    width: 150px;
+    height: 150px;
+    margin: 20px auto 0;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--primary-sand);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    border: 3px solid var(--primary-fossil);
+}
+
+.avatar-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+}
+
+.avatar-preview img.loaded {
+    display: block;
+}
+
+/* Force avatar image to show */
+#avatar-preview-img[src]:not([src=""]) {
+    display: block !important;
+}
+
+.avatar-placeholder {
+    font-size: 3.5rem;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+/* Avatar Config */
+.avatar-config {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--light-gray);
+}
+
+.avatar-config h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    margin-bottom: 16px;
+    color: var(--primary-earth);
+}
+
+.avatar-options {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.avatar-options label {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    background: var(--off-white);
+    border-radius: 8px;
+    border: 2px solid var(--light-gray);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.avatar-options label:hover {
+    border-color: var(--primary-fossil);
+    background: white;
+}
+
+.avatar-options input[type="radio"] {
+    margin-right: 6px;
+    accent-color: var(--primary-blue);
+}
+
+.avatar-options label:has(input[type="radio"]:checked) {
+    background: var(--primary-blue);
+    color: white;
+    border-color: var(--primary-blue);
+}
+
+#preset-avatar-select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid var(--primary-sand);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: white;
+}
+
+/* Buttons */
+.controls {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.primary-button {
+    flex: 1;
+    background: var(--primary-blue);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.primary-button:hover {
+    background: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+.primary-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.secondary-button {
+    flex: 1;
+    background: white;
+    color: var(--dark-gray);
+    border: 2px solid var(--gray);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.secondary-button:hover:not(:disabled) {
+    border-color: var(--primary-fossil);
+    color: var(--primary-fossil);
+}
+
+/* Fun Facts */
+.fun-facts {
+    background: linear-gradient(135deg, #90EE90 0%, #98FB98 100%);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    margin-top: auto;
+    border: 1px solid #7CFC00;
+}
+
+.fun-facts h4 {
+    font-family: 'Playfair Display', serif;
+    color: var(--primary-green);
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+}
+
+.fun-facts p {
+    color: var(--primary-earth);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* Right Panel */
+.right-panel {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Video Section */
+.avatar-section {
+    background-image: url('/images/Paleo-background.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    position: relative;
+}
+
+.avatar-section::before {
+    content: 'Video Call with Dr. Grant';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--primary-green);
+    color: white;
+    padding: 4px 20px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+#video-wrapper {
+    width: 100%;
+    max-width: 350px;
+    height: 280px;
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
+    margin: 0 auto;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    border: 3px solid #333;
+    position: relative;
+}
+
+#talk-video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+#loading-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+}
+
+.spinner {
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 3px solid white;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Chat Section */
+.chat-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border: 2px solid var(--primary-sand);
+    position: relative;
+    gap: 0;
+    justify-content: space-between;
+}
+
+.chat-section::before {
+    content: 'Field Notes & Questions';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--primary-fossil);
+    color: white;
+    padding: 4px 20px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+#chat-history {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background: var(--off-white);
+    border-radius: 12px;
+    min-height: 150px;
+    margin-bottom: 12px;
+    border: 1px solid var(--light-gray);
+}
+
+#chat-history::-webkit-scrollbar {
+    width: 8px;
+}
+
+#chat-history::-webkit-scrollbar-thumb {
+    background: var(--primary-fossil);
+    border-radius: 4px;
+}
+
+.message {
+    margin-bottom: 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    max-width: 80%;
+    position: relative;
+}
+
+.user-message {
+    background: var(--primary-blue);
+    color: white;
+    margin-left: auto;
+    text-align: right;
+    margin-right: 0;
+}
+
+.user-message::after {
+    content: '🔍';
+    position: absolute;
+    right: -25px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+}
+
+.ai-message {
+    background: #F5F5F5;
+    color: var(--black);
+    border: 1px solid #E0E0E0;
+    margin-right: auto;
+    margin-left: 0;
+}
+
+.ai-message::before {
+    content: '🦖';
+    position: absolute;
+    left: -25px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+}
+
+/* Input Section */
+.input-section {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: var(--off-white);
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--light-gray);
+    margin: 0;
+    flex-wrap: nowrap;
+}
+
+#user-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid var(--primary-sand);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: white;
+    font-family: inherit;
+    resize: none;
+    line-height: 1.4;
+    height: 44px;
+    box-sizing: border-box;
+}
+
+#user-input:focus {
+    outline: none;
+    border-color: var(--primary-fossil);
+    box-shadow: 0 0 0 3px rgba(139, 105, 20, 0.1);
+}
+
+#user-input::placeholder {
+    color: var(--dark-gray);
+    font-style: italic;
+}
+
+#send-button {
+    padding: 12px 16px;
+    height: fit-content;
+    align-self: center;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Status */
+.status {
+    text-align: center;
+    color: var(--dark-gray);
+    font-size: 0.85rem;
+    margin-top: 8px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .main-container {
+        grid-template-columns: 350px 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .left-panel {
+        border-right: none;
+        border-bottom: 2px solid var(--primary-fossil);
+    }
+}

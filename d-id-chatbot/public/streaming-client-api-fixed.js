@@ -29,6 +29,7 @@ class StreamingApiClient {
     this.videoElement = videoElement || document.getElementById('talk-video');
     this.configuration = config;
     this.avatarUrl = null; // Will be set when connecting
+    this.encodedApiKey = null; // Will store base64 encoded API key
     
     // Override API settings with provided config
     if (config) {
@@ -38,6 +39,8 @@ class StreamingApiClient {
         service: config.service || 'talks'
       };
       streamingServiceUrl = `${DID_API.url}/${DID_API.service}/streams`;
+      // Base64 encode the API key once
+      this.encodedApiKey = btoa(config.key);
     }
     
     this.connectionStateChangeHandler = null;
@@ -87,8 +90,7 @@ class StreamingApiClient {
         'Accept': 'application/json'
       },
       body: JSON.stringify({
-        source_url: this.avatarUrl,
-        stream_warmup: true  // Enable warmup phase for data channel
+        source_url: this.avatarUrl
       })
     }).catch(err => {
       console.error('Fetch error:', err);
@@ -141,7 +143,7 @@ class StreamingApiClient {
       await fetch(`${streamingServiceUrl}/${streamId}/ice`, {
         method: 'POST',
         headers: {
-          'Authorization': `Basic ${DID_API.key}`,
+          'Authorization': `Basic ${this.encodedApiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -155,7 +157,7 @@ class StreamingApiClient {
     const startResponse = await fetch(`${streamingServiceUrl}/${streamId}/sdp`, {
       method: 'POST',
       headers: {
-        Authorization: `Basic ${DID_API.key}`,
+        Authorization: `Basic ${this.encodedApiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -230,7 +232,7 @@ class StreamingApiClient {
     const talkResponse = await fetch(`${streamingServiceUrl}/${streamId}`, {
       method: 'POST',
       headers: {
-        Authorization: `Basic ${DID_API.key}`,
+        Authorization: `Basic ${this.encodedApiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -239,7 +241,7 @@ class StreamingApiClient {
           input: text,
           provider: {
             type: 'microsoft',
-            voice_id: 'en-US-JennyNeural'
+            voice_id: 'en-US-AndrewMultilingualNeural'  // Friendly younger male voice, good for Dr. Dino
           }
         },
         driver_url: 'bank://lively',
@@ -263,7 +265,7 @@ class StreamingApiClient {
       await fetch(`${streamingServiceUrl}/${streamId}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Basic ${DID_API.key}`,
+          Authorization: `Basic ${this.encodedApiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ session_id: sessionId })
@@ -291,6 +293,9 @@ class StreamingApiClient {
       peerConnection = new RTCPeerConnection({ iceServers });
       
       // Don't create our own data channel - D-ID creates it
+      
+      // Store reference to this for use in event listeners
+      const self = this;
 
       // Listen for both connection state changes
       peerConnection.addEventListener('connectionstatechange', () => {
@@ -326,7 +331,7 @@ class StreamingApiClient {
             const response = await fetch(`${streamingServiceUrl}/${streamId}/ice`, {
               method: 'POST',
               headers: {
-                'Authorization': `Basic ${DID_API.key}`,
+                'Authorization': `Basic ${self.encodedApiKey}`,
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({

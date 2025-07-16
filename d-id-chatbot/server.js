@@ -52,9 +52,9 @@ app.post('/api/chat', async (req, res) => {
     
     // Get response from OpenAI
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4.1-nano",
       messages: [
-        { role: "system", content: "You are a friendly assistant. Keep your responses concise and conversational." },
+        { role: "system", content: "You are a friendly, knowledgeable paleontologist who loves teaching kids about dinosaurs—speak with warmth and enthusiasm, explain things clearly and vividly, share fun facts, encourage curiosity, keep answers concise and engaging, and end most responses with a playful question like “What’s your favorite dinosaur?” or “Want to hear a cool fossil fact?”" },
         { role: "user", content: message }
       ],
       max_tokens: 150 // Keep responses short for avatar
@@ -77,6 +77,7 @@ app.post('/api/streams/create', async (req, res) => {
     const fetch = require('node-fetch');
     
     console.log('Stream creation request:', req.body);
+    console.log('Using API key:', apiConfig.key ? 'Key present' : 'No key!');
     
     const response = await fetch('https://api.d-id.com/talks/streams', {
       method: 'POST',

@@ -84,7 +84,7 @@ async function initializeStreamingClient() {
             updateStatus('Avatar ready to speak!');
             
             // Send initial greeting now that stream is ready
-            makeAvatarSpeak("Hello! I'm your AI assistant. How can I help you today?");
+            makeAvatarSpeak("Hi there, young explorer! I'm Dr. Grant! Ready to discover some amazing dinosaur facts? What's your favorite dinosaur?");
         });
         
         // Fallback: If no stream ready event after 3 seconds, assume ready
@@ -92,7 +92,7 @@ async function initializeStreamingClient() {
             if (isConnected && !streamingClient.isStreamReady) {
                 console.log('Forcing stream ready from app.js after timeout');
                 updateStatus('Avatar ready to speak! (forced)');
-                makeAvatarSpeak("Hello! I'm your AI assistant. How can I help you today?");
+                makeAvatarSpeak("Hi there, young explorer! I'm Dr. Grant! Ready to discover some amazing dinosaur facts? What's your favorite dinosaur?");
             }
         }, 3000);
         
@@ -110,6 +110,8 @@ async function initializeStreamingClient() {
                 sendButton.disabled = false;
                 destroyButton.disabled = false;
                 connectButton.disabled = true;
+                
+                // Disconnect button is always visible, just enable/disable it
             } else if (state === 'disconnected' || state === 'failed') {
                 isConnected = false;
                 loadingIndicator.classList.add('hidden');
@@ -120,11 +122,14 @@ async function initializeStreamingClient() {
                 sendButton.disabled = true;
                 destroyButton.disabled = true;
                 connectButton.disabled = false;
+                
+                // Disconnect button is always visible, just enable/disable it
             }
         });
         
         // Get selected avatar URL
-        const avatarUrl = avatarSelector ? avatarSelector.getCurrentAvatar() : null;
+        const avatarUrl = avatarSelector ? avatarSelector.getCurrentAvatar() : "https://i.imgur.com/SXwWFEf.png";
+        console.log('Avatar URL:', avatarUrl, 'avatarSelector:', avatarSelector);
         
         // Connect to streaming service with selected avatar
         await streamingClient.connect(avatarUrl);
@@ -137,6 +142,8 @@ async function initializeStreamingClient() {
         // Reset button states
         connectButton.disabled = false;
         destroyButton.disabled = true;
+        
+        // Disconnect button is always visible, just enable/disable it
     }
 }
 

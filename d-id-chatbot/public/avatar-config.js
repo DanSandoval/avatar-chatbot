@@ -1,10 +1,10 @@
 // D-ID Avatar Presets Configuration
 const AVATAR_PRESETS = {
     emma: {
-        name: "Emma (Default)",
-        source_url: "https://create-images-results.d-id.com/DefaultPresenters/Emma_f/v1_image.jpeg",
-        preview_url: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👩</text></svg>",
-        gender: "female"
+        name: "Dr. Elias Grant",
+        source_url: "https://sdmntprwestus2.oaiusercontent.com/files/00000000-c1cc-61f8-b1c1-32e18ac16218/raw?se=2025-07-16T20%3A16%3A13Z&sp=r&sv=2024-08-04&sr=b&scid=c4bb53a1-5ac2-5c21-9c3a-3047630aafc0&skoid=61180a4f-34a9-42b7-b76d-9ca47d89946d&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-07-16T01%3A13%3A13Z&ske=2025-07-17T01%3A13%3A13Z&sks=b&skv=2024-08-04&sig=jOfQ7cHqj3yaQZIeBJPG%2BQMQPLQ2osd75kYU3yPI/P8%3D",
+        preview_url: "/images/dr-elias-grant.png",
+        gender: "male"
     }
 };
 
@@ -13,7 +13,7 @@ class AvatarSelector {
     constructor() {
         this.currentAvatar = AVATAR_PRESETS.emma.source_url;
         this.initializeEventListeners();
-        this.updatePreview();
+        this.updatePreview(AVATAR_PRESETS.emma.preview_url);
     }
 
     initializeEventListeners() {
@@ -24,11 +24,15 @@ class AvatarSelector {
 
         // Preset selection change
         const presetSelect = document.getElementById('preset-avatar-select');
-        presetSelect.addEventListener('change', (e) => this.handlePresetChange(e));
+        if (presetSelect) {
+            presetSelect.addEventListener('change', (e) => this.handlePresetChange(e));
+        }
 
         // Custom URL input
         const customUrlInput = document.getElementById('custom-avatar-url');
-        customUrlInput.addEventListener('input', (e) => this.handleCustomUrlInput(e));
+        if (customUrlInput) {
+            customUrlInput.addEventListener('input', (e) => this.handleCustomUrlInput(e));
+        }
     }
 
     handleAvatarTypeChange(event) {
@@ -114,15 +118,28 @@ class AvatarSelector {
 
     updatePreview(url = null) {
         const previewImg = document.getElementById('avatar-preview-img');
+        const placeholder = document.querySelector('.avatar-placeholder');
+        
         if (url) {
             previewImg.src = url;
-            previewImg.classList.add('loaded');
+            previewImg.onload = () => {
+                previewImg.classList.add('loaded');
+                if (placeholder) {
+                    placeholder.style.display = 'none';
+                }
+            };
             previewImg.onerror = () => {
                 previewImg.classList.remove('loaded');
+                if (placeholder) {
+                    placeholder.style.display = 'flex';
+                }
                 console.error('Failed to load avatar preview:', url);
             };
         } else {
             previewImg.classList.remove('loaded');
+            if (placeholder) {
+                placeholder.style.display = 'flex';
+            }
         }
     }
 
