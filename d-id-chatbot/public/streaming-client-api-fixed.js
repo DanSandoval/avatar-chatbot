@@ -51,6 +51,10 @@ class StreamingApiClient {
   setStreamReadyHandler(handler) {
     this.streamReadyHandler = handler;
   }
+  
+  get isStreamReady() {
+    return isStreamReady;
+  }
 
   async connect(avatarUrl = null) {
     if (!DID_API || !DID_API.key) {
@@ -83,7 +87,8 @@ class StreamingApiClient {
         'Accept': 'application/json'
       },
       body: JSON.stringify({
-        source_url: this.avatarUrl
+        source_url: this.avatarUrl,
+        stream_warmup: true  // Enable warmup phase for data channel
       })
     }).catch(err => {
       console.error('Fetch error:', err);
@@ -129,6 +134,22 @@ class StreamingApiClient {
     } catch (e) {
       console.error('Error during streaming setup', e);
       throw e;
+    }
+    
+    // Send initial ICE configuration (for idle stream)
+    try {
+      await fetch(`${streamingServiceUrl}/${streamId}/ice`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${DID_API.key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          session_id: sessionId
+        })
+      });
+    } catch (error) {
+      console.error('Error sending initial ICE config:', error);
     }
 
     const startResponse = await fetch(`${streamingServiceUrl}/${streamId}/sdp`, {
@@ -196,8 +217,9 @@ class StreamingApiClient {
       throw new Error('No stream ID - not connected to streaming service');
     }
     
-    if (!peerConnection || peerConnection.connectionState !== 'connected') {
-      throw new Error('WebRTC not connected (state: ' + (peerConnection?.connectionState || 'no connection') + ')');
+    // Allow speaking if either connectionState OR iceConnectionState is connected
+    if (!peerConnection || (peerConnection.connectionState !== 'connected' && peerConnection.iceConnectionState !== 'connected')) {
+      throw new Error('WebRTC not connected (connectionState: ' + (peerConnection?.connectionState || 'no connection') + ', iceConnectionState: ' + (peerConnection?.iceConnectionState || 'no connection') + ')');
     }
     
     if (!isStreamReady) {
@@ -270,7 +292,13 @@ class StreamingApiClient {
       
       // Don't create our own data channel - D-ID creates it
 
+      // Listen for both connection state changes
+      peerConnection.addEventListener('connectionstatechange', () => {
+        console.log(`Connection state changed: ${peerConnection.connectionState}, ICE state: ${peerConnection.iceConnectionState}`);
+      });
+      
       peerConnection.addEventListener('iceconnectionstatechange', () => {
+        console.log(`ICE connection state changed: ${peerConnection.iceConnectionState}, Connection state: ${peerConnection.connectionState}`);
         if (this.connectionStateChangeHandler) {
           this.connectionStateChangeHandler(peerConnection.iceConnectionState);
         }
@@ -289,9 +317,32 @@ class StreamingApiClient {
         }
       });
 
-      peerConnection.addEventListener('icecandidate', (event) => {
+      peerConnection.addEventListener('icecandidate', async (event) => {
         if (event.candidate) {
           console.log('New ICE candidate', event.candidate);
+          
+          // Send ICE candidate to D-ID
+          try {
+            const response = await fetch(`${streamingServiceUrl}/${streamId}/ice`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Basic ${DID_API.key}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                candidate: event.candidate.candidate,
+                sdpMid: event.candidate.sdpMid,
+                sdpMLineIndex: event.candidate.sdpMLineIndex,
+                session_id: sessionId
+              })
+            });
+            
+            if (!response.ok) {
+              console.error('Failed to submit ICE candidate:', response.status);
+            }
+          } catch (error) {
+            console.error('Error submitting ICE candidate:', error);
+          }
         }
       });
 
@@ -310,8 +361,13 @@ class StreamingApiClient {
         const channel = event.channel;
         console.log('Received data channel:', channel.label);
         
+        // Store the data channel globally
+        dataChannel = channel;
+        
         channel.addEventListener('open', () => {
           console.log('Remote data channel opened');
+          // Also mark stream ready when data channel opens
+          isStreamReady = true;
         });
         
         channel.addEventListener('message', (event) => {

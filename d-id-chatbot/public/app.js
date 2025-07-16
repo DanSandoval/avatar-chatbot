@@ -87,6 +87,15 @@ async function initializeStreamingClient() {
             makeAvatarSpeak("Hello! I'm your AI assistant. How can I help you today?");
         });
         
+        // Fallback: If no stream ready event after 3 seconds, assume ready
+        setTimeout(() => {
+            if (isConnected && !streamingClient.isStreamReady) {
+                console.log('Forcing stream ready from app.js after timeout');
+                updateStatus('Avatar ready to speak! (forced)');
+                makeAvatarSpeak("Hello! I'm your AI assistant. How can I help you today?");
+            }
+        }, 3000);
+        
         // Set up event handlers
         streamingClient.setConnectionStateChangeHandler((state) => {
             console.log('Connection state:', state);
