@@ -142,12 +142,8 @@ class StreamingApiClient {
       fullSessionData: sessionData
     });
     
-    // Check if we got a cookie instead of a proper session ID
-    if (didSessionId && (didSessionId.includes('AWSALB') || didSessionId.includes('='))) {
-      console.warn('D-ID API returned cookie data in session_id field, ignoring it completely');
-      // Set to undefined so it won't be included in requests at all
-      didSessionId = undefined;
-    }
+    // D-ID API returns cookies in session_id field - we'll use it as-is
+    console.log('Using session_id as provided by D-ID:', didSessionId ? 'Present' : 'Missing');
 
     try {
       sessionClientAnswer = await this.createPeerConnection(
@@ -168,7 +164,7 @@ class StreamingApiClient {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(
-          didSessionId !== undefined ? { session_id: didSessionId } : {}
+          didSessionId ? { session_id: didSessionId } : {}
         )
       });
       
@@ -188,7 +184,7 @@ class StreamingApiClient {
       },
       body: JSON.stringify({
         answer: sessionClientAnswer,
-        ...(didSessionId !== undefined && { session_id: didSessionId })
+        ...(didSessionId && { session_id: didSessionId })
       })
     });
 
@@ -289,7 +285,7 @@ class StreamingApiClient {
         config: {
           stitch: true
         },
-        ...(didSessionId !== undefined && { session_id: didSessionId })
+        ...(didSessionId && { session_id: didSessionId })
       })
     });
 
@@ -323,7 +319,7 @@ class StreamingApiClient {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(
-          didSessionId !== undefined ? { session_id: didSessionId } : {}
+          didSessionId ? { session_id: didSessionId } : {}
         )
       });
 
@@ -394,7 +390,7 @@ class StreamingApiClient {
                 candidate: event.candidate.candidate,
                 sdpMid: event.candidate.sdpMid,
                 sdpMLineIndex: event.candidate.sdpMLineIndex,
-                ...(didSessionId !== undefined && { session_id: didSessionId })
+                ...(didSessionId && { session_id: didSessionId })
               })
             });
             
