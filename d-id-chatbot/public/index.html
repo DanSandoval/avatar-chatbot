@@ -37,12 +37,16 @@
                 <h3>Connect with Dr. Grant</h3>
                 
                 <div class="controls">
-                    <button id="connect-button" class="primary-button">
-                        <span class="button-text">Start Call</span>
-                    </button>
-                    <button id="destroy-button" class="secondary-button" disabled>
-                        Disconnect
-                    </button>
+                    <div class="controls-row" id="main-controls">
+                        <button id="connect-button" class="primary-button">
+                            <span class="button-text">Start Call</span>
+                        </button>
+                    </div>
+                    <div class="controls-row">
+                        <button id="destroy-button" class="secondary-button" disabled>
+                            Disconnect
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -88,6 +92,8 @@
     <script src="/streaming-client-api-fixed.js"></script>
     <!-- Load avatar configuration -->
     <script src="avatar-config.js"></script>
+    <!-- Load OpenAI voice chat -->
+    <script src="openai-voice.js"></script>
     <!-- Load our chat application -->
     <script src="app.js"></script>
 </body>

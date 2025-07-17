@@ -11,7 +11,7 @@ const RTCPeerConnection = (
 
 let peerConnection;
 let streamId;
-let sessionId;
+let didSessionId;
 let sessionClientAnswer;
 let statsIntervalId;
 let videoIsPlaying;
@@ -39,8 +39,8 @@ class StreamingApiClient {
         service: config.service || 'talks'
       };
       streamingServiceUrl = `${DID_API.url}/${DID_API.service}/streams`;
-      // Base64 encode the API key once
-      this.encodedApiKey = btoa(config.key);
+      // Use API key directly without base64 encoding (per D-ID docs)
+      this.encodedApiKey = config.key;
     }
     
     this.connectionStateChangeHandler = null;
@@ -72,8 +72,8 @@ class StreamingApiClient {
       return;
     }
 
-    // Use provided avatar URL or default to Emma
-    this.avatarUrl = avatarUrl || "https://create-images-results.d-id.com/DefaultPresenters/Emma_f/v1_image.jpeg";
+    // Use provided avatar URL or default to Dr. Elias Grant
+    this.avatarUrl = avatarUrl || "https://sdmntprwestus2.oaiusercontent.com/files/00000000-c1cc-61f8-b1c1-32e18ac16218/raw?se=2025-07-17T16%3A30%3A35Z&sp=r&sv=2024-08-04&sr=b&scid=d4fc66ab-44d0-56bd-95bc-42cd3eedc052&skoid=bbd22fc4-f881-4ea4-b2f3-c12033cf6a8b&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-07-17T04%3A22%3A34Z&ske=2025-07-18T04%3A22%3A34Z&sks=b&skv=2024-08-04&sig=pqgQbo5Z3plvJOt0ecrbGmAvaBMI23K0aHXUX/7UVyg%3D";
 
     stopAllStreams();
     closePC();
@@ -96,6 +96,10 @@ class StreamingApiClient {
       console.error('Fetch error:', err);
       throw new Error('Network error: ' + err.message);
     });
+    
+    // Debug the raw response
+    console.log('Proxy response status:', sessionResponse.status);
+    console.log('Proxy response headers:', [...sessionResponse.headers.entries()]);
 
     let sessionData;
     try {
@@ -125,8 +129,25 @@ class StreamingApiClient {
       throw new Error(errorMsg);
     }
 
+    // Extract session data
     streamId = sessionData.id;
-    sessionId = sessionData.session_id;
+    
+    // D-ID API bug: session_id field contains AWS load balancer cookies
+    // We'll try to work without it
+    didSessionId = sessionData.session_id;
+    
+    console.log('Session created:', { 
+      streamId, 
+      didSessionId,
+      fullSessionData: sessionData
+    });
+    
+    // Check if we got a cookie instead of a proper session ID
+    if (didSessionId && (didSessionId.includes('AWSALB') || didSessionId.includes('='))) {
+      console.warn('D-ID API returned cookie data in session_id field, ignoring it completely');
+      // Set to undefined so it won't be included in requests at all
+      didSessionId = undefined;
+    }
 
     try {
       sessionClientAnswer = await this.createPeerConnection(
@@ -140,16 +161,21 @@ class StreamingApiClient {
     
     // Send initial ICE configuration (for idle stream)
     try {
-      await fetch(`${streamingServiceUrl}/${streamId}/ice`, {
+      const iceResponse = await fetch(`${streamingServiceUrl}/${streamId}/ice`, {
         method: 'POST',
         headers: {
           'Authorization': `Basic ${this.encodedApiKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          session_id: sessionId
-        })
+        body: JSON.stringify(
+          didSessionId !== undefined ? { session_id: didSessionId } : {}
+        )
       });
+      
+      if (!iceResponse.ok) {
+        const errorText = await iceResponse.text();
+        console.error('Initial ICE config failed:', iceResponse.status, errorText);
+      }
     } catch (error) {
       console.error('Error sending initial ICE config:', error);
     }
@@ -162,13 +188,21 @@ class StreamingApiClient {
       },
       body: JSON.stringify({
         answer: sessionClientAnswer,
-        session_id: sessionId
+        ...(didSessionId !== undefined && { session_id: didSessionId })
       })
     });
 
     if (!startResponse.ok) {
-      const errorData = await startResponse.json();
-      throw new Error(`Failed to start stream: ${errorData.message || startResponse.statusText}`);
+      let errorMessage = `Status: ${startResponse.status}`;
+      try {
+        const errorData = await startResponse.json();
+        console.error('SDP submission failed:', errorData);
+        errorMessage = errorData.message || errorData.description || startResponse.statusText;
+      } catch (e) {
+        const errorText = await startResponse.text();
+        console.error('SDP submission failed (raw):', errorText);
+      }
+      throw new Error(`Failed to start stream: ${errorMessage}`);
     }
 
     if (this.connectionStateChangeHandler) {
@@ -228,6 +262,13 @@ class StreamingApiClient {
       console.log('Warning: Stream may not be ready yet (no stream/ready event received)');
       // Continue anyway as fallback
     }
+    
+    console.log('Speak request details:', { 
+      streamId, 
+      didSessionId, 
+      didSessionIdType: typeof didSessionId,
+      text: text.substring(0, 50) + '...' 
+    });
 
     const talkResponse = await fetch(`${streamingServiceUrl}/${streamId}`, {
       method: 'POST',
@@ -248,13 +289,26 @@ class StreamingApiClient {
         config: {
           stitch: true
         },
-        session_id: sessionId
+        ...(didSessionId !== undefined && { session_id: didSessionId })
       })
     });
 
     if (!talkResponse.ok) {
-      const errorData = await talkResponse.json();
-      throw new Error(`Failed to speak: ${errorData.message || talkResponse.statusText}`);
+      let errorMessage = `Status: ${talkResponse.status}`;
+      try {
+        const errorData = await talkResponse.json();
+        console.error('D-ID speak error details:', {
+          status: talkResponse.status,
+          statusText: talkResponse.statusText,
+          error: errorData,
+          streamId: streamId,
+          didSessionId: didSessionId
+        });
+        errorMessage = errorData.message || errorData.error || talkResponse.statusText;
+      } catch (e) {
+        console.error('Could not parse error response');
+      }
+      throw new Error(`Failed to speak: ${errorMessage}`);
     }
   }
 
@@ -268,7 +322,9 @@ class StreamingApiClient {
           Authorization: `Basic ${this.encodedApiKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ session_id: sessionId })
+        body: JSON.stringify(
+          didSessionId !== undefined ? { session_id: didSessionId } : {}
+        )
       });
 
       stopAllStreams();
@@ -338,12 +394,13 @@ class StreamingApiClient {
                 candidate: event.candidate.candidate,
                 sdpMid: event.candidate.sdpMid,
                 sdpMLineIndex: event.candidate.sdpMLineIndex,
-                session_id: sessionId
+                ...(didSessionId !== undefined && { session_id: didSessionId })
               })
             });
             
             if (!response.ok) {
-              console.error('Failed to submit ICE candidate:', response.status);
+              const errorText = await response.text();
+              console.error('Failed to submit ICE candidate:', response.status, errorText);
             }
           } catch (error) {
             console.error('Error submitting ICE candidate:', error);
@@ -465,7 +522,7 @@ function closePC() {
 
   videoIsPlaying = false;
   streamId = null;
-  sessionId = null;
+  didSessionId = null;
   sessionClientAnswer = null;
   isStreamReady = false;
   dataChannel = null;

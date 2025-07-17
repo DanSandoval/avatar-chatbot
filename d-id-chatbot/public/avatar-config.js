@@ -2,8 +2,8 @@
 const AVATAR_PRESETS = {
     emma: {
         name: "Dr. Elias Grant",
-        source_url: "https://sdmntprwestus2.oaiusercontent.com/files/00000000-c1cc-61f8-b1c1-32e18ac16218/raw?se=2025-07-16T20%3A16%3A13Z&sp=r&sv=2024-08-04&sr=b&scid=c4bb53a1-5ac2-5c21-9c3a-3047630aafc0&skoid=61180a4f-34a9-42b7-b76d-9ca47d89946d&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-07-16T01%3A13%3A13Z&ske=2025-07-17T01%3A13%3A13Z&sks=b&skv=2024-08-04&sig=jOfQ7cHqj3yaQZIeBJPG%2BQMQPLQ2osd75kYU3yPI/P8%3D",
-        preview_url: "/images/dr-elias-grant.png",
+        source_url: "https://sdmntprwestus2.oaiusercontent.com/files/00000000-c1cc-61f8-b1c1-32e18ac16218/raw?se=2025-07-17T17%3A40%3A50Z&sp=r&sv=2024-08-04&sr=b&scid=8b8102ec-d392-5459-9acc-3bf34f3c51c0&skoid=0da8417a-a4c3-4a19-9b05-b82cee9d8868&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-07-17T04%3A24%3A28Z&ske=2025-07-18T04%3A24%3A28Z&sks=b&skv=2024-08-04&sig=I4ZnAG1yK0nRRBHMxPp90CDMz7j1TlbNKrM1%2BSAVCU8%3D",
+        preview_url: "/images/dr-elias-grant-avatar.png",
         gender: "male"
     }
 };
@@ -11,7 +11,7 @@ const AVATAR_PRESETS = {
 // Avatar selection handling
 class AvatarSelector {
     constructor() {
-        this.currentAvatar = AVATAR_PRESETS.emma.source_url;
+        this.currentAvatar = "https://create-images-results.d-id.com/DefaultPresenters/Noelle_f/thumbnail.jpeg";
         this.initializeEventListeners();
         this.updatePreview(AVATAR_PRESETS.emma.preview_url);
     }

@@ -8,6 +8,10 @@ let SERVICE_TYPE = null;
 let streamingClient = null;
 let isConnected = false;
 
+// Voice chat instance
+let voiceChat = null;
+let voiceMode = false;
+
 // DOM elements
 const connectButton = document.getElementById('connect-button');
 const destroyButton = document.getElementById('destroy-button');
@@ -111,6 +115,12 @@ async function initializeStreamingClient() {
                 destroyButton.disabled = false;
                 connectButton.disabled = true;
                 
+                // Enable voice button
+                const voiceBtn = document.getElementById('voice-button');
+                if (voiceBtn) {
+                    voiceBtn.disabled = false;
+                }
+                
                 // Disconnect button is always visible, just enable/disable it
             } else if (state === 'disconnected' || state === 'failed') {
                 isConnected = false;
@@ -147,6 +157,45 @@ async function initializeStreamingClient() {
     }
 }
 
+// Speech queue management
+let speechQueue = [];
+let isSpeaking = false;
+
+// Process speech queue
+async function processSpeechQueue() {
+    if (isSpeaking || speechQueue.length === 0 || !streamingClient || !isConnected) {
+        return;
+    }
+    
+    isSpeaking = true;
+    const text = speechQueue.shift();
+    
+    try {
+        updateStatus('Avatar is speaking...');
+        await streamingClient.speak(text);
+        
+        // Wait for avatar to finish speaking
+        // Estimate based on text length (roughly 50ms per character)
+        const estimatedDuration = Math.max(2000, text.length * 50);
+        await new Promise(resolve => setTimeout(resolve, estimatedDuration));
+        
+        updateStatus('Ready');
+    } catch (error) {
+        updateStatus('Speaking failed: ' + error.message);
+        console.error('Speak error:', error);
+        
+        // If it's a 400 error, wait longer before continuing
+        if (error.message.includes('400') || error.message.includes('Bad Request')) {
+            console.log('Stream busy, waiting 2 seconds...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+    } finally {
+        isSpeaking = false;
+        // Process next item in queue after a short delay
+        setTimeout(processSpeechQueue, 500);
+    }
+}
+
 // Make avatar speak
 async function makeAvatarSpeak(text) {
     if (!streamingClient || !isConnected) {
@@ -154,14 +203,9 @@ async function makeAvatarSpeak(text) {
         return;
     }
     
-    try {
-        updateStatus('Avatar is speaking...');
-        await streamingClient.speak(text);
-        updateStatus('Ready');
-    } catch (error) {
-        updateStatus('Speaking failed: ' + error.message);
-        console.error('Speak error:', error);
-    }
+    // Add to queue and process
+    speechQueue.push(text);
+    processSpeechQueue();
 }
 
 // Send message to AI and get response
@@ -236,8 +280,147 @@ userInput.addEventListener('keypress', (e) => {
     }
 });
 
+// Create and add voice button
+function createVoiceButton() {
+    const voiceBtn = document.createElement('button');
+    voiceBtn.id = 'voice-button';
+    voiceBtn.innerHTML = '<span class="voice-icon">🎤</span><span class="voice-text">Voice</span>';
+    voiceBtn.className = 'voice-button';
+    voiceBtn.disabled = true; // Enable after avatar connects
+    voiceBtn.title = 'Voice Chat';
+    
+    // Find the main controls row (first row with Start Call button)
+    const mainControls = document.querySelector('#main-controls');
+    if (mainControls) {
+        mainControls.appendChild(voiceBtn);
+    } else {
+        // Fallback: try to find any controls container
+        const controls = document.querySelector('.controls') || document.querySelector('.chat-controls');
+        if (controls) {
+            controls.appendChild(voiceBtn);
+        } else {
+            // Final fallback: add to chat container
+            const chatContainer = document.querySelector('.chat-container') || document.body;
+            voiceBtn.style.cssText = 'position: fixed; top: 20px; right: 20px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; z-index: 1000;';
+            chatContainer.appendChild(voiceBtn);
+        }
+    }
+    
+    // Voice button click handler
+    voiceBtn.addEventListener('click', toggleVoiceMode);
+    
+    return voiceBtn;
+}
+
+// Toggle voice mode
+async function toggleVoiceMode() {
+    const voiceBtn = document.getElementById('voice-button');
+    
+    if (!voiceMode) {
+        try {
+            // Check if we have OpenAI API key
+            const openAIKey = await getOpenAIKey();
+            if (!openAIKey) {
+                updateStatus('OpenAI API key not configured');
+                return;
+            }
+            
+            // Start voice mode
+            voiceMode = true;
+            voiceBtn.innerHTML = '🔴 Voice Active';
+            voiceBtn.style.background = '#dc3545';
+            
+            // Initialize voice chat
+            voiceChat = new VoiceChat();
+            await voiceChat.start(openAIKey);
+            
+            // Hide text input
+            userInput.disabled = true;
+            sendButton.disabled = true;
+            userInput.placeholder = 'Voice mode active - speak to chat';
+            
+            updateStatus('Voice chat active - speak naturally!');
+            
+        } catch (error) {
+            console.error('Failed to start voice:', error);
+            updateStatus('Voice chat failed: ' + error.message);
+            voiceMode = false;
+            voiceBtn.innerHTML = '🎤 Voice Chat';
+            voiceBtn.style.background = '#007bff';
+        }
+    } else {
+        // Stop voice mode
+        voiceMode = false;
+        voiceBtn.innerHTML = '🎤 Voice Chat';
+        voiceBtn.style.background = '#007bff';
+        
+        if (voiceChat) {
+            voiceChat.stop();
+            voiceChat = null;
+        }
+        
+        // Re-enable text input
+        if (isConnected) {
+            userInput.disabled = false;
+            sendButton.disabled = false;
+            userInput.placeholder = 'Type your message...';
+        }
+        
+        updateStatus('Voice chat stopped');
+    }
+}
+
+// Handle AI response from voice chat
+window.handleAIResponse = async function(text) {
+    // Add AI response to chat display
+    addMessage(text, false);
+    
+    // Make avatar speak
+    if (streamingClient && isConnected) {
+        await makeAvatarSpeak(text);
+    }
+};
+
+// Handle voice disconnection
+window.handleVoiceDisconnected = function() {
+    if (voiceMode) {
+        const voiceBtn = document.getElementById('voice-button');
+        voiceMode = false;
+        voiceBtn.innerHTML = '🎤 Voice Chat';
+        voiceBtn.style.background = '#007bff';
+        
+        if (isConnected) {
+            userInput.disabled = false;
+            sendButton.disabled = false;
+            userInput.placeholder = 'Type your message...';
+        }
+        
+        updateStatus('Voice chat disconnected');
+    }
+};
+
+// Get OpenAI API key
+async function getOpenAIKey() {
+    try {
+        // First check if it's in .env on server
+        const response = await fetch('/api/openai-key');
+        if (response.ok) {
+            const data = await response.json();
+            return data.key;
+        }
+    } catch (error) {
+        console.log('No server-side OpenAI key, checking client config');
+    }
+    
+    // Fallback to client-side config (not recommended for production)
+    return window.OPENAI_API_KEY || null;
+}
+
 // Initialize on page load
 window.addEventListener('load', async () => {
     await loadAPIConfig();
     updateStatus('Ready to connect');
+    
+    // Create voice button
+    const voiceBtn = createVoiceButton();
 });
