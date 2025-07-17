@@ -114,12 +114,10 @@ class VoiceChat {
         type: 'session.update',
         session: {
           modalities: ['text', 'audio'],
-          instructions: `You are Dr. Elias Grant, a friendly paleontologist at the Natural History Museum. 
+          instructions: `You are Dr. Elias Grant, a friendly paleontologist at the Museum of Science. 
             You love sharing fascinating facts about dinosaurs and prehistoric life with visitors.
             
-            CRITICAL: Keep ALL responses to 1-2 short sentences maximum. Be conversational and natural.
-            
-            Always maintain your character as a knowledgeable but approachable museum guide.
+            Speak in short sentences. Responses should be 1 sentence long. Be conversational and natural.
             
             ${conversationHistory ? `Previous conversation context:\n${conversationHistory}` : ''}
             
@@ -127,6 +125,9 @@ class VoiceChat {
           voice: 'alloy',
           input_audio_format: 'pcm16',
           output_audio_format: 'pcm16',
+          input_audio_transcription: {
+            model: 'whisper-1'
+          },
           turn_detection: {
             type: 'server_vad',
             threshold: 0.5,
@@ -164,10 +165,18 @@ class VoiceChat {
     switch (msg.type) {
       // User speech transcription
       case 'conversation.item.created':
+        console.log('Conversation item created:', msg);
         if (msg.item && msg.item.role === 'user' && msg.item.content) {
-          const userText = msg.item.content.find(c => c.type === 'input_text')?.text;
-          if (userText && window.addMessage) {
-            window.addMessage('user', userText);
+          // Check for both input_text (typed) and input_audio (spoken)
+          const content = msg.item.content.find(c => c.type === 'input_text' || c.type === 'input_audio');
+          console.log('Found content:', content);
+          if (content) {
+            // For audio, we need to get the transcript
+            const userText = content.text || content.transcript;
+            console.log('User text:', userText, 'window.addMessage:', window.addMessage);
+            if (userText && window.addMessage) {
+              window.addMessage(userText, true); // true = user message
+            }
           }
         }
         break;
@@ -190,6 +199,24 @@ class VoiceChat {
           const thinking = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
           // This will process while user speaks
           window.makeAvatarSpeak(thinking);
+        }
+        break;
+        
+      // User speech stopped
+      case 'input_audio_buffer.speech_stopped':
+        console.log('User stopped speaking');
+        break;
+        
+      // User input committed - this might have the transcript
+      case 'input_audio_buffer.committed':
+        console.log('User input committed:', msg);
+        break;
+        
+      // Conversation item input audio transcription completed
+      case 'conversation.item.input_audio_transcription.completed':
+        console.log('User audio transcription completed:', msg);
+        if (msg.transcript && window.addMessage) {
+          window.addMessage(msg.transcript, true);
         }
         break;
       

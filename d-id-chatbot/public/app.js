@@ -60,6 +60,9 @@ function addMessage(text, isUser = false) {
     chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
+// Expose to window for cross-file access
+window.addMessage = addMessage;
+
 // Initialize streaming client
 async function initializeStreamingClient() {
     if (!API_KEY) {
@@ -96,7 +99,7 @@ async function initializeStreamingClient() {
             // Send initial greeting only if not already sent
             if (!greetingSent) {
                 greetingSent = true;
-                makeAvatarSpeak("Hi there, young explorer! I'm Dr. Elias Grant! Ready to discover some amazing dinosaur facts? What's your favorite dinosaur?");
+                makeAvatarSpeak("Hi there, explorer! I'm Dr. Elias Grant! Ready to discover some amazing dinosaur facts? What's your favorite dinosaur?");
             }
         });
         
@@ -106,7 +109,7 @@ async function initializeStreamingClient() {
                 console.log('Forcing stream ready from app.js after timeout');
                 updateStatus('Avatar ready to speak! (forced)');
                 greetingSent = true;
-                makeAvatarSpeak("Hi there, young explorer! I'm Dr. Elias Grant! Ready to discover some amazing dinosaur facts? What's your favorite dinosaur?");
+                makeAvatarSpeak("Hi there, explorer! I'm Dr. Elias Grant! Ready to discover some amazing dinosaur facts? What's your favorite dinosaur?");
             }
         }, 3000);
         
@@ -468,6 +471,62 @@ async function getOpenAIKey() {
     return window.OPENAI_API_KEY || null;
 }
 
+// Dinosaur facts array
+const dinosaurFacts = [
+    "T-Rex arms were actually super strong - each arm could lift 400 pounds!",
+    "The longest dinosaur was Argentinosaurus, stretching up to 115 feet long!",
+    "Velociraptors were only about the size of a turkey, not as big as in movies!",
+    "Some dinosaurs swallowed stones to help grind up food in their stomachs!",
+    "The smallest dinosaur ever found was only 16 inches long - about the size of a crow!",
+    "Dinosaurs lived on every continent, including Antarctica!",
+    "Many dinosaurs had feathers, not just scales!",
+    "The word 'dinosaur' means 'terrible lizard' in Greek!",
+    "Some dinosaurs could run up to 45 mph - faster than a racehorse!",
+    "The largest dinosaur eggs were about the size of a football!",
+    "Triceratops had up to 800 teeth for grinding plants!",
+    "Dinosaurs ruled the Earth for over 165 million years!",
+    "The first dinosaur fossil was discovered in 1824!",
+    "Some meat-eating dinosaurs were cannibals!",
+    "Stegosaurus had a brain the size of a walnut!",
+    "Brachiosaurus' heart weighed as much as 400 pounds!",
+    "Many dinosaurs traveled in herds for protection!",
+    "Some dinosaurs could swim, but none could fly - those were pterosaurs!",
+    "The loudest dinosaur was probably Parasaurolophus with its trumpet-like crest!",
+    "Baby dinosaurs are called hatchlings!"
+];
+
+let currentFactIndex = 0;
+let factRotationInterval = null;
+
+// Function to update the dinosaur fact with fade effect
+function updateDinosaurFact() {
+    const factElement = document.getElementById('dino-fact');
+    if (!factElement) return;
+    
+    // Fade out
+    factElement.style.opacity = '0';
+    
+    setTimeout(() => {
+        // Update fact
+        currentFactIndex = (currentFactIndex + 1) % dinosaurFacts.length;
+        factElement.textContent = dinosaurFacts[currentFactIndex];
+        
+        // Fade in
+        factElement.style.opacity = '1';
+    }, 300);
+}
+
+// Start rotating facts
+function startFactRotation() {
+    // Clear any existing interval
+    if (factRotationInterval) {
+        clearInterval(factRotationInterval);
+    }
+    
+    // Rotate every 25 seconds
+    factRotationInterval = setInterval(updateDinosaurFact, 25000);
+}
+
 // Initialize on page load
 window.addEventListener('load', async () => {
     await loadAPIConfig();
@@ -475,4 +534,13 @@ window.addEventListener('load', async () => {
     
     // Create voice button
     const voiceBtn = createVoiceButton();
+    
+    // Start fact rotation
+    startFactRotation();
+    
+    // Add transition for smooth fade effect
+    const factElement = document.getElementById('dino-fact');
+    if (factElement) {
+        factElement.style.transition = 'opacity 0.3s ease-in-out';
+    }
 });

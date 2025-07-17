@@ -2,7 +2,7 @@
 const AVATAR_PRESETS = {
     emma: {
         name: "Dr. Elias Grant",
-        source_url: "https://sdmntprwestus2.oaiusercontent.com/files/00000000-c1cc-61f8-b1c1-32e18ac16218/raw?se=2025-07-17T17%3A40%3A50Z&sp=r&sv=2024-08-04&sr=b&scid=8b8102ec-d392-5459-9acc-3bf34f3c51c0&skoid=0da8417a-a4c3-4a19-9b05-b82cee9d8868&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-07-17T04%3A24%3A28Z&ske=2025-07-18T04%3A24%3A28Z&sks=b&skv=2024-08-04&sig=I4ZnAG1yK0nRRBHMxPp90CDMz7j1TlbNKrM1%2BSAVCU8%3D",
+        source_url: "https://sdmntprwestus2.oaiusercontent.com/files/00000000-c1cc-61f8-b1c1-32e18ac16218/raw?se=2025-07-17T21%3A51%3A41Z&sp=r&sv=2024-08-04&sr=b&scid=0facfef8-6b98-5ee3-b20c-1cb7f24752bb&skoid=e9d2f8b1-028a-4cff-8eb1-d0e66fbefcca&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-07-17T04%3A21%3A01Z&ske=2025-07-18T04%3A21%3A01Z&sks=b&skv=2024-08-04&sig=/8338hu9Ol8yYBUvc7NsaRCwDDvYxhSi2nZHQ4jgSTg%3D",
         preview_url: "/images/dr-elias-grant-avatar.png",
         gender: "male"
     }
@@ -11,7 +11,7 @@ const AVATAR_PRESETS = {
 // Avatar selection handling
 class AvatarSelector {
     constructor() {
-        this.currentAvatar = "https://create-images-results.d-id.com/DefaultPresenters/Noelle_f/thumbnail.jpeg";
+        this.currentAvatar = AVATAR_PRESETS.emma.source_url;
         this.initializeEventListeners();
         this.updatePreview(AVATAR_PRESETS.emma.preview_url);
     }
