@@ -193,8 +193,9 @@ class VoiceChat {
           const thinkingPhrases = [
             "I have to think about that... hmm",
             "Let me consider this... hmm", 
-            "That's a thoughtful question... hmm",
-            "Interesting point... let me think"
+            "Ooh, interesting...",
+            "hah, you've got me thinking now...",
+            "oh, hmm"
           ];
           const thinking = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
           // This will process while user speaks

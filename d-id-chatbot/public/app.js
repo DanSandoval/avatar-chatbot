@@ -543,4 +543,44 @@ window.addEventListener('load', async () => {
     if (factElement) {
         factElement.style.transition = 'opacity 0.3s ease-in-out';
     }
+    
+    // Setup avatar preview click to play video
+    setupAvatarVideoPlayback();
 });
+
+// Setup avatar video playback on click
+function setupAvatarVideoPlayback() {
+    const avatarImg = document.getElementById('avatar-preview-img');
+    const avatarVideo = document.getElementById('avatar-preview-video');
+    const avatarPreview = document.getElementById('avatar-preview');
+    
+    if (!avatarImg || !avatarVideo) return;
+    
+    let isPlaying = false;
+    
+    avatarImg.addEventListener('click', () => {
+        if (!isPlaying) {
+            // Hide image, show and play video
+            avatarImg.style.display = 'none';
+            avatarVideo.style.display = 'block';
+            avatarVideo.play();
+            isPlaying = true;
+        }
+    });
+    
+    // When video ends, switch back to image
+    avatarVideo.addEventListener('ended', () => {
+        avatarVideo.style.display = 'none';
+        avatarImg.style.display = 'block';
+        isPlaying = false;
+    });
+    
+    // Also allow clicking video to stop it
+    avatarVideo.addEventListener('click', () => {
+        avatarVideo.pause();
+        avatarVideo.currentTime = 0;
+        avatarVideo.style.display = 'none';
+        avatarImg.style.display = 'block';
+        isPlaying = false;
+    });
+}

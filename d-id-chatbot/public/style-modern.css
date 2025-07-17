@@ -154,6 +154,7 @@ body {
     background: var(--primary-sand);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
     border: 3px solid var(--primary-fossil);
+    position: relative;
 }
 
 .avatar-preview img {
@@ -334,6 +335,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    height: calc(100vh - 70px);
+    overflow: hidden;
 }
 
 /* Video Section */
@@ -413,11 +416,14 @@ body {
     background: white;
     border-radius: 16px;
     padding: 20px;
+    padding-top: 28px; /* Extra space for the label */
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     border: 2px solid var(--primary-sand);
     position: relative;
     gap: 0;
     justify-content: space-between;
+    min-height: 0; /* Important for flex children to respect height constraints */
+    overflow: visible; /* Allow the label to show */
 }
 
 .chat-section::before {

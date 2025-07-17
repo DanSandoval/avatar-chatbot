@@ -17,6 +17,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
+// Serve video file from root directory
+app.get('/call-me-vid.mp4', (req, res) => {
+  res.sendFile(path.join(__dirname, 'call-me-vid.mp4'));
+});
+
 // Serve the main page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
