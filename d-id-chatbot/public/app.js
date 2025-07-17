@@ -82,6 +82,9 @@ async function initializeStreamingClient() {
         // Create streaming client instance
         streamingClient = new StreamingApiClient(configuration, talkVideo);
         
+        // Expose to window for cross-file access
+        window.streamingClient = streamingClient;
+        
         // Track if we've sent the greeting
         let greetingSent = false;
         
@@ -215,6 +218,13 @@ async function makeAvatarSpeak(text) {
     speechQueue.push(text);
     processSpeechQueue();
 }
+
+// Expose functions to window for cross-file access
+window.makeAvatarSpeak = makeAvatarSpeak;
+// Create a getter for isConnected since it changes
+Object.defineProperty(window, 'isConnected', {
+    get: function() { return isConnected; }
+});
 
 // Initialize Realtime API connection
 async function initializeRealtimeChat() {

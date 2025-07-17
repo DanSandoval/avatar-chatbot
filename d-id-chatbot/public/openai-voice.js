@@ -175,8 +175,21 @@ class VoiceChat {
       // When user starts speaking (interrupt avatar)
       case 'input_audio_buffer.speech_started':
         console.log('User started speaking');
-        if (window.streamingClient && window.streamingClient.isSpeaking) {
-          window.streamingClient.stopSpeaking();
+        // Note: streamingClient doesn't have stopSpeaking method
+        // The avatar will continue current speech
+        
+        // Pre-generate thinking animation while user is speaking
+        if (window.makeAvatarSpeak) {
+          console.log('Pre-generating thinking animation...');
+          const thinkingPhrases = [
+            "I have to think about that... hmm",
+            "Let me consider this... hmm", 
+            "That's a thoughtful question... hmm",
+            "Interesting point... let me think"
+          ];
+          const thinking = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
+          // This will process while user speaks
+          window.makeAvatarSpeak(thinking);
         }
         break;
       
