@@ -8,8 +8,8 @@ let SERVICE_TYPE = null;
 let streamingClient = null;
 let isConnected = false;
 
-// Voice chat instance
-let voiceChat = null;
+// Unified Realtime chat instance (renamed from voiceChat)
+let realtimeChat = null;
 let voiceMode = false;
 
 // DOM elements
@@ -82,21 +82,28 @@ async function initializeStreamingClient() {
         // Create streaming client instance
         streamingClient = new StreamingApiClient(configuration, talkVideo);
         
+        // Track if we've sent the greeting
+        let greetingSent = false;
+        
         // Set up stream ready handler
         streamingClient.setStreamReadyHandler(() => {
             console.log('Stream is ready!');
             updateStatus('Avatar ready to speak!');
             
-            // Send initial greeting now that stream is ready
-            makeAvatarSpeak("Hi there, young explorer! I'm Dr. Grant! Ready to discover some amazing dinosaur facts? What's your favorite dinosaur?");
+            // Send initial greeting only if not already sent
+            if (!greetingSent) {
+                greetingSent = true;
+                makeAvatarSpeak("Hi there, young explorer! I'm Dr. Elias Grant! Ready to discover some amazing dinosaur facts? What's your favorite dinosaur?");
+            }
         });
         
         // Fallback: If no stream ready event after 3 seconds, assume ready
         setTimeout(() => {
-            if (isConnected && !streamingClient.isStreamReady) {
+            if (isConnected && !streamingClient.isStreamReady && !greetingSent) {
                 console.log('Forcing stream ready from app.js after timeout');
                 updateStatus('Avatar ready to speak! (forced)');
-                makeAvatarSpeak("Hi there, young explorer! I'm Dr. Grant! Ready to discover some amazing dinosaur facts? What's your favorite dinosaur?");
+                greetingSent = true;
+                makeAvatarSpeak("Hi there, young explorer! I'm Dr. Elias Grant! Ready to discover some amazing dinosaur facts? What's your favorite dinosaur?");
             }
         }, 3000);
         
@@ -121,7 +128,8 @@ async function initializeStreamingClient() {
                     voiceBtn.disabled = false;
                 }
                 
-                // Disconnect button is always visible, just enable/disable it
+                // Initialize Realtime API connection
+                initializeRealtimeChat();
             } else if (state === 'disconnected' || state === 'failed') {
                 isConnected = false;
                 loadingIndicator.classList.add('hidden');
@@ -208,6 +216,27 @@ async function makeAvatarSpeak(text) {
     processSpeechQueue();
 }
 
+// Initialize Realtime API connection
+async function initializeRealtimeChat() {
+    try {
+        const openAIKey = await getOpenAIKey();
+        if (!openAIKey) {
+            console.log('OpenAI API key not available');
+            return;
+        }
+        
+        // Create unified chat instance (using VoiceChat class)
+        realtimeChat = new VoiceChat();
+        // Start with silent audio (text-only mode)
+        await realtimeChat.start(openAIKey, false);
+        
+        updateStatus('AI connection established');
+    } catch (error) {
+        console.error('Failed to initialize Realtime chat:', error);
+        updateStatus('AI connection failed');
+    }
+}
+
 // Send message to AI and get response
 async function sendMessage() {
     const message = userInput.value.trim();
@@ -223,26 +252,31 @@ async function sendMessage() {
     updateStatus('Getting AI response...');
     
     try {
-        // Get AI response
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message })
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to get AI response');
+        if (realtimeChat && realtimeChat.isConnected()) {
+            // Use Realtime API
+            await realtimeChat.sendTextMessage(message);
+            // Response will come through handleAIResponse callback
+        } else {
+            // Fallback to REST API
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to get AI response');
+            }
+            
+            const data = await response.json();
+            const aiResponse = data.response;
+            
+            // Add AI response to chat
+            addMessage(aiResponse, false);
+            
+            // Make avatar speak the response
+            await makeAvatarSpeak(aiResponse);
         }
-        
-        const data = await response.json();
-        const aiResponse = data.response;
-        
-        // Add AI response to chat
-        addMessage(aiResponse, false);
-        
-        // Make avatar speak the response
-        await makeAvatarSpeak(aiResponse);
-        
     } catch (error) {
         updateStatus('Error: ' + error.message);
         console.error('Chat error:', error);
@@ -258,13 +292,24 @@ async function sendMessage() {
 
 // Disconnect avatar
 async function disconnectAvatar() {
+    // Stop Realtime connection
+    if (realtimeChat) {
+        try {
+            await realtimeChat.stop();
+            realtimeChat = null;
+        } catch (error) {
+            console.error('Realtime disconnect error:', error);
+        }
+    }
+    
+    // Stop avatar streaming
     if (streamingClient) {
         try {
             await streamingClient.disconnect();
             streamingClient = null;
             isConnected = false;
         } catch (error) {
-            console.error('Disconnect error:', error);
+            console.error('Avatar disconnect error:', error);
         }
     }
 }
@@ -318,10 +363,9 @@ async function toggleVoiceMode() {
     
     if (!voiceMode) {
         try {
-            // Check if we have OpenAI API key
-            const openAIKey = await getOpenAIKey();
-            if (!openAIKey) {
-                updateStatus('OpenAI API key not configured');
+            // Check if Realtime connection exists
+            if (!realtimeChat || !realtimeChat.isConnected()) {
+                updateStatus('AI connection not ready');
                 return;
             }
             
@@ -330,9 +374,8 @@ async function toggleVoiceMode() {
             voiceBtn.innerHTML = '🔴 Voice Active';
             voiceBtn.style.background = '#dc3545';
             
-            // Initialize voice chat
-            voiceChat = new VoiceChat();
-            await voiceChat.start(openAIKey);
+            // Enable voice in the unified chat
+            await realtimeChat.enableVoice();
             
             // Hide text input
             userInput.disabled = true;
@@ -354,9 +397,8 @@ async function toggleVoiceMode() {
         voiceBtn.innerHTML = '🎤 Voice Chat';
         voiceBtn.style.background = '#007bff';
         
-        if (voiceChat) {
-            voiceChat.stop();
-            voiceChat = null;
+        if (realtimeChat) {
+            await realtimeChat.disableVoice();
         }
         
         // Re-enable text input

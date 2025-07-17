@@ -1,24 +1,35 @@
-// OpenAI Realtime Voice Chat Integration
+// OpenAI Realtime Chat Integration (Unified Text and Voice)
 class VoiceChat {
   constructor() {
     this.pc = null;
     this.dc = null;
     this.apiKey = null;
+    this._isConnected = false;  // Internal property
+    this.audioStream = null;
+    this.silentStream = null;
   }
 
-  async start(apiKey) {
+  async start(apiKey, requireAudio = true) {
     try {
       this.apiKey = apiKey;
-      console.log('Starting voice chat...');
+      console.log('Starting realtime chat connection...');
       
-      // Get microphone permission
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        } 
-      });
+      let stream;
+      if (requireAudio) {
+        // Get microphone permission for voice mode
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          } 
+        });
+        this.audioStream = stream;
+      } else {
+        // Create silent audio track for text-only mode
+        stream = this.createSilentAudioStream();
+        this.silentStream = stream;
+      }
       
       // Setup WebRTC peer connection
       this.pc = new RTCPeerConnection({
@@ -65,12 +76,30 @@ class VoiceChat {
       };
       
       await this.pc.setRemoteDescription(answer);
-      console.log('Voice chat connected successfully');
+      this._isConnected = true;
+      console.log('Realtime chat connected successfully');
       
     } catch (error) {
-      console.error('Failed to start voice chat:', error);
+      console.error('Failed to start realtime chat:', error);
       throw error;
     }
+  }
+  
+  createSilentAudioStream() {
+    // Create a silent audio stream for initial connection
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    
+    // Set gain to 0 for silence
+    gain.gain.value = 0;
+    oscillator.connect(gain);
+    
+    const destination = audioContext.createMediaStreamDestination();
+    gain.connect(destination);
+    oscillator.start();
+    
+    return destination.stream;
   }
   
   setupDataChannel() {
@@ -85,7 +114,7 @@ class VoiceChat {
         type: 'session.update',
         session: {
           modalities: ['text', 'audio'],
-          instructions: `You are Dr. Sarah Peterson, a friendly paleontologist at the Natural History Museum. 
+          instructions: `You are Dr. Elias Grant, a friendly paleontologist at the Natural History Museum. 
             You love sharing fascinating facts about dinosaurs and prehistoric life with visitors.
             
             CRITICAL: Keep ALL responses to 1-2 short sentences maximum. Be conversational and natural.
@@ -199,8 +228,97 @@ class VoiceChat {
     }
   }
   
+  // Send text message through data channel
+  sendTextMessage(text) {
+    if (!this._isConnected || !this.dc || this.dc.readyState !== 'open') {
+      throw new Error('Realtime chat not connected');
+    }
+    
+    // Create user message
+    this.dc.send(JSON.stringify({
+      type: 'conversation.item.create',
+      item: {
+        type: 'message',
+        role: 'user',
+        content: [{
+          type: 'input_text',
+          text: text
+        }]
+      }
+    }));
+    
+    // Trigger AI response
+    this.dc.send(JSON.stringify({
+      type: 'response.create',
+      response: {
+        modalities: ['text', 'audio']
+      }
+    }));
+  }
+  
+  // Enable voice mode (replace silent stream with microphone)
+  async enableVoice() {
+    if (this.audioStream) {
+      console.log('Voice already enabled');
+      return;
+    }
+    
+    try {
+      // Get microphone permission
+      const micStream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
+      
+      this.audioStream = micStream;
+      
+      // Replace the silent track with microphone track
+      const sender = this.pc.getSenders().find(s => s.track && s.track.kind === 'audio');
+      if (sender) {
+        const micTrack = micStream.getAudioTracks()[0];
+        await sender.replaceTrack(micTrack);
+      }
+      
+      console.log('Voice mode enabled');
+    } catch (error) {
+      console.error('Failed to enable voice:', error);
+      throw error;
+    }
+  }
+  
+  // Disable voice mode (replace microphone with silent stream)
+  async disableVoice() {
+    if (!this.audioStream) {
+      console.log('Voice already disabled');
+      return;
+    }
+    
+    try {
+      // Replace microphone track with silent track
+      const sender = this.pc.getSenders().find(s => s.track && s.track.kind === 'audio');
+      if (sender && this.silentStream) {
+        const silentTrack = this.silentStream.getAudioTracks()[0];
+        await sender.replaceTrack(silentTrack);
+      }
+      
+      // Stop microphone tracks
+      if (this.audioStream) {
+        this.audioStream.getTracks().forEach(track => track.stop());
+        this.audioStream = null;
+      }
+      
+      console.log('Voice mode disabled');
+    } catch (error) {
+      console.error('Failed to disable voice:', error);
+      throw error;
+    }
+  }
+  
   stop() {
-    console.log('Stopping voice chat...');
+    console.log('Stopping realtime chat...');
     
     if (this.dc) {
       this.dc.close();
@@ -217,10 +335,19 @@ class VoiceChat {
       this.pc.close();
     }
     
+    // Clean up audio streams
+    if (this.audioStream) {
+      this.audioStream.getTracks().forEach(track => track.stop());
+    }
+    if (this.silentStream) {
+      this.silentStream.getTracks().forEach(track => track.stop());
+    }
+    
     this.pc = null;
     this.dc = null;
+    this._isConnected = false;
     
-    console.log('Voice chat stopped');
+    console.log('Realtime chat stopped');
   }
   
   isConnected() {
@@ -235,7 +362,7 @@ class VoiceChat {
     const recentMessages = Array.from(messages).slice(-10); // Last 10 messages
     
     recentMessages.forEach(msg => {
-      const role = msg.classList.contains('user-message') ? 'Visitor' : 'Dr. Peterson';
+      const role = msg.classList.contains('user-message') ? 'Visitor' : 'Dr. Elias Grant';
       const text = msg.querySelector('p')?.textContent || msg.textContent;
       if (text) {
         history.push(`${role}: ${text}`);
