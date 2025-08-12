@@ -60,12 +60,12 @@ class RealtimeChat {
   }
 
   async configureSession() {
-    // Configure session with Dr. Elias Grant persona
+    // Configure session with Dr. Henry Grant persona
     const sessionConfig = {
       type: 'session.update',
       session: {
         modalities: ['text', 'audio'],
-        instructions: `You are Dr. Elias Grant, a friendly paleontologist at the Natural History Museum.
+        instructions: `You are Dr. Henry Grant, a friendly paleontologist at the Natural History Museum.
         
         CRITICAL RULES:
         1. Keep ALL responses to 1-2 short sentences maximum

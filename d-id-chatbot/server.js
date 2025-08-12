@@ -72,7 +72,7 @@ app.post('/api/chat', async (req, res) => {
       conversationHistory.set(sessionId, [
         { 
           role: "system", 
-          content: `You are Dr. Elias Grant, a friendly paleontologist at the Natural History Museum.
+          content: `You are Dr. Henry Grant, a friendly paleontologist at the Natural History Museum.
           
           CRITICAL RULES:
           1. Keep ALL responses to 1-2 very short sentences.

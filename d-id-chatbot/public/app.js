@@ -99,7 +99,7 @@ async function initializeStreamingClient() {
             // Send initial greeting only if not already sent
             if (!greetingSent) {
                 greetingSent = true;
-                makeAvatarSpeak("Hi there, explorer! I'm Dr. Elias Grant! Ready to discover some amazing dinosaur facts? What's your favorite dinosaur?");
+                makeAvatarSpeak("Hi there, explorer! I'm Dr. Henry Grant! Ready to discover some amazing dinosaur facts? What's your favorite dinosaur?");
             }
         });
         
@@ -109,7 +109,7 @@ async function initializeStreamingClient() {
                 console.log('Forcing stream ready from app.js after timeout');
                 updateStatus('Avatar ready to speak! (forced)');
                 greetingSent = true;
-                makeAvatarSpeak("Hi there, explorer! I'm Dr. Elias Grant! Ready to discover some amazing dinosaur facts? What's your favorite dinosaur?");
+                makeAvatarSpeak("Hi there, explorer! I'm Dr. Henry Grant! Ready to discover some amazing dinosaur facts? What's your favorite dinosaur?");
             }
         }, 3000);
         
@@ -427,12 +427,20 @@ async function toggleVoiceMode() {
 
 // Handle AI response from voice chat
 window.handleAIResponse = async function(text) {
-    // Add AI response to chat display
-    addMessage(text, false);
-    
-    // Make avatar speak
     if (streamingClient && isConnected) {
-        await makeAvatarSpeak(text);
+        // Make avatar speak first
+        makeAvatarSpeak(text);
+        
+        // Estimate speaking duration (increased from 50ms to 80ms per character for better sync)
+        const estimatedDuration = Math.max(3000, text.length * 80);
+        
+        // Show message after avatar finishes speaking
+        setTimeout(() => {
+            addMessage(text, false);
+        }, estimatedDuration);
+    } else {
+        // If not connected, show message immediately
+        addMessage(text, false);
     }
 };
 

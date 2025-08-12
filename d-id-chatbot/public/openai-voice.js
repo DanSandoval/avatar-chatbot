@@ -114,7 +114,7 @@ class VoiceChat {
         type: 'session.update',
         session: {
           modalities: ['text', 'audio'],
-          instructions: `You are Dr. Elias Grant, a friendly paleontologist at the Museum of Science. 
+          instructions: `You are Dr. Henry Grant, a friendly paleontologist at the Museum of Science. 
             You love sharing fascinating facts about dinosaurs and prehistoric life with visitors.
             
             Speak in short sentences. Responses should be 1 sentence long. Be conversational and natural.
@@ -167,15 +167,14 @@ class VoiceChat {
       case 'conversation.item.created':
         console.log('Conversation item created:', msg);
         if (msg.item && msg.item.role === 'user' && msg.item.content) {
-          // Check for both input_text (typed) and input_audio (spoken)
-          const content = msg.item.content.find(c => c.type === 'input_text' || c.type === 'input_audio');
-          console.log('Found content:', content);
-          if (content) {
-            // For audio, we need to get the transcript
-            const userText = content.text || content.transcript;
-            console.log('User text:', userText, 'window.addMessage:', window.addMessage);
-            if (userText && window.addMessage) {
-              window.addMessage(userText, true); // true = user message
+          // Only display user messages from voice input (input_audio)
+          // Text messages are already displayed when sent
+          const audioContent = msg.item.content.find(c => c.type === 'input_audio');
+          console.log('Found audio content:', audioContent);
+          if (audioContent && audioContent.transcript) {
+            console.log('User voice transcript:', audioContent.transcript);
+            if (window.addMessage) {
+              window.addMessage(audioContent.transcript, true); // true = user message
             }
           }
         }
@@ -323,6 +322,37 @@ class VoiceChat {
         await sender.replaceTrack(micTrack);
       }
       
+      // Update session with current conversation history
+      const conversationHistory = this.getConversationHistory();
+      if (this.dc && this.dc.readyState === 'open') {
+        this.dc.send(JSON.stringify({
+          type: 'session.update',
+          session: {
+            modalities: ['text', 'audio'],
+            instructions: `You are Dr. Henry Grant, a friendly paleontologist at the Museum of Science. 
+              You love sharing fascinating facts about dinosaurs and prehistoric life with visitors.
+              
+              Speak in short sentences. Responses should be 1 sentence long. Be conversational and natural.
+              
+              ${conversationHistory ? `Previous conversation context:\n${conversationHistory}` : ''}
+              
+              Remember what the visitor has asked about and build upon previous topics naturally.`,
+            voice: 'alloy',
+            input_audio_format: 'pcm16',
+            output_audio_format: 'pcm16',
+            input_audio_transcription: {
+              model: 'whisper-1'
+            },
+            turn_detection: {
+              type: 'server_vad',
+              threshold: 0.5,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 500
+            }
+          }
+        }));
+      }
+      
       console.log('Voice mode enabled');
     } catch (error) {
       console.error('Failed to enable voice:', error);
@@ -403,7 +433,7 @@ class VoiceChat {
     const recentMessages = Array.from(messages).slice(-10); // Last 10 messages
     
     recentMessages.forEach(msg => {
-      const role = msg.classList.contains('user-message') ? 'Visitor' : 'Dr. Elias Grant';
+      const role = msg.classList.contains('user-message') ? 'Visitor' : 'Dr. Henry Grant';
       const text = msg.querySelector('p')?.textContent || msg.textContent;
       if (text) {
         history.push(`${role}: ${text}`);

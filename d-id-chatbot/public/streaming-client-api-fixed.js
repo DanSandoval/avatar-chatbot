@@ -72,7 +72,7 @@ class StreamingApiClient {
       return;
     }
 
-    // Use provided avatar URL or default to Dr. Elias Grant
+    // Use provided avatar URL or default to Dr. Henry Grant
     this.avatarUrl = avatarUrl || "https://sdmntprwestus2.oaiusercontent.com/files/00000000-c1cc-61f8-b1c1-32e18ac16218/raw?se=2025-07-17T16%3A30%3A35Z&sp=r&sv=2024-08-04&sr=b&scid=d4fc66ab-44d0-56bd-95bc-42cd3eedc052&skoid=bbd22fc4-f881-4ea4-b2f3-c12033cf6a8b&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-07-17T04%3A22%3A34Z&ske=2025-07-18T04%3A22%3A34Z&sks=b&skv=2024-08-04&sig=pqgQbo5Z3plvJOt0ecrbGmAvaBMI23K0aHXUX/7UVyg%3D";
 
     stopAllStreams();

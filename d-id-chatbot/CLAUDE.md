@@ -1,7 +1,7 @@
 # D-ID Avatar Chatbot Project
 
 ## Project Overview
-This is a web-based chatbot application that uses D-ID's Live Streaming API to create a talking avatar (Dr. Elias Grant, a paleontologist) that responds to user messages using OpenAI's GPT-4 model.
+This is a web-based chatbot application that uses D-ID's Live Streaming API to create a talking avatar (Dr. Henry Grant, a paleontologist) that responds to user messages using OpenAI's GPT-4 model.
 
 ## Project Directory
 ```
