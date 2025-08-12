@@ -370,9 +370,73 @@ function createVoiceButton() {
     return voiceBtn;
 }
 
+// Create and add push-to-talk button
+function createPushToTalkButton() {
+    const pttBtn = document.createElement('button');
+    pttBtn.id = 'ptt-button';
+    pttBtn.innerHTML = '<span class="ptt-icon">🎙️</span><span class="ptt-text">Hold to Talk</span>';
+    pttBtn.className = 'ptt-button';
+    pttBtn.disabled = true; // Enable when voice mode is active
+    pttBtn.title = 'Hold to speak (Space key also works)';
+    pttBtn.style.display = 'none'; // Hidden by default
+    
+    // Find input section to add PTT button
+    const inputSection = document.querySelector('.input-section');
+    if (inputSection) {
+        // Insert before the text input
+        inputSection.insertBefore(pttBtn, inputSection.firstChild);
+    } else {
+        // Fallback: add to chat section
+        const chatSection = document.querySelector('.chat-section');
+        if (chatSection) {
+            chatSection.appendChild(pttBtn);
+        }
+    }
+    
+    // PTT button handlers (mouse/touch)
+    pttBtn.addEventListener('mousedown', startPushToTalk);
+    pttBtn.addEventListener('mouseup', stopPushToTalk);
+    pttBtn.addEventListener('mouseleave', stopPushToTalk); // Stop if mouse leaves button
+    pttBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startPushToTalk();
+    });
+    pttBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        stopPushToTalk();
+    });
+    
+    return pttBtn;
+}
+
+// Start push-to-talk
+function startPushToTalk() {
+    if (!realtimeChat || !voiceMode) return;
+    
+    const pttBtn = document.getElementById('ptt-button');
+    if (realtimeChat.startPushToTalk()) {
+        pttBtn.classList.add('recording');
+        pttBtn.innerHTML = '<span class="ptt-icon">🔴</span><span class="ptt-text">Recording...</span>';
+        updateStatus('Recording - Release to send');
+    }
+}
+
+// Stop push-to-talk
+function stopPushToTalk() {
+    if (!realtimeChat || !voiceMode) return;
+    
+    const pttBtn = document.getElementById('ptt-button');
+    if (realtimeChat.stopPushToTalk()) {
+        pttBtn.classList.remove('recording');
+        pttBtn.innerHTML = '<span class="ptt-icon">🎙️</span><span class="ptt-text">Hold to Talk</span>';
+        updateStatus('Processing voice input...');
+    }
+}
+
 // Toggle voice mode
 async function toggleVoiceMode() {
     const voiceBtn = document.getElementById('voice-button');
+    const pttBtn = document.getElementById('ptt-button');
     
     if (!voiceMode) {
         try {
@@ -390,12 +454,20 @@ async function toggleVoiceMode() {
             // Enable voice in the unified chat
             await realtimeChat.enableVoice();
             
-            // Hide text input
-            userInput.disabled = true;
-            sendButton.disabled = true;
-            userInput.placeholder = 'Voice mode active - speak to chat';
+            // Enable push-to-talk mode
+            realtimeChat.enablePushToTalk();
             
-            updateStatus('Voice chat active - speak naturally!');
+            // Show and enable PTT button
+            if (pttBtn) {
+                pttBtn.style.display = 'block';
+                pttBtn.disabled = false;
+            }
+            
+            // Hide text input and send button
+            userInput.style.display = 'none';
+            sendButton.style.display = 'none';
+            
+            updateStatus('Push-to-Talk ready - Hold button or press Space to speak');
             
         } catch (error) {
             console.error('Failed to start voice:', error);
@@ -411,8 +483,19 @@ async function toggleVoiceMode() {
         voiceBtn.style.background = '#007bff';
         
         if (realtimeChat) {
+            realtimeChat.disablePushToTalk();
             await realtimeChat.disableVoice();
         }
+        
+        // Hide PTT button
+        if (pttBtn) {
+            pttBtn.style.display = 'none';
+            pttBtn.disabled = true;
+        }
+        
+        // Show text input and send button
+        userInput.style.display = 'block';
+        sendButton.style.display = 'block';
         
         // Re-enable text input
         if (isConnected) {
@@ -542,6 +625,27 @@ window.addEventListener('load', async () => {
     
     // Create voice button
     const voiceBtn = createVoiceButton();
+    
+    // Create push-to-talk button
+    const pttBtn = createPushToTalkButton();
+    
+    // Add keyboard support for push-to-talk (Space key)
+    let spacePressed = false;
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && voiceMode && !spacePressed) {
+            e.preventDefault();
+            spacePressed = true;
+            startPushToTalk();
+        }
+    });
+    
+    document.addEventListener('keyup', (e) => {
+        if (e.code === 'Space' && voiceMode && spacePressed) {
+            e.preventDefault();
+            spacePressed = false;
+            stopPushToTalk();
+        }
+    });
     
     // Start fact rotation
     startFactRotation();

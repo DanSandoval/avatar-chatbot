@@ -7,6 +7,10 @@ class VoiceChat {
     this._isConnected = false;  // Internal property
     this.audioStream = null;
     this.silentStream = null;
+    this.isPushToTalkActive = false;
+    this.pushToTalkMode = false;
+    this.audioBuffer = [];
+    this.isProcessingAudio = false;
   }
 
   async start(apiKey, requireAudio = true) {
@@ -343,7 +347,7 @@ class VoiceChat {
             input_audio_transcription: {
               model: 'whisper-1'
             },
-            turn_detection: {
+            turn_detection: this.pushToTalkMode ? null : {
               type: 'server_vad',
               threshold: 0.5,
               prefix_padding_ms: 300,
@@ -441,6 +445,101 @@ class VoiceChat {
     });
     
     return history.join('\n');
+  }
+  
+  // Enable push-to-talk mode
+  enablePushToTalk() {
+    this.pushToTalkMode = true;
+    console.log('Push-to-talk mode enabled');
+    
+    // Update session to disable VAD
+    if (this.dc && this.dc.readyState === 'open') {
+      this.dc.send(JSON.stringify({
+        type: 'session.update',
+        session: {
+          turn_detection: null  // Disable VAD for PTT
+        }
+      }));
+    }
+  }
+  
+  // Disable push-to-talk mode
+  disablePushToTalk() {
+    this.pushToTalkMode = false;
+    this.isPushToTalkActive = false;
+    console.log('Push-to-talk mode disabled');
+    
+    // Re-enable VAD
+    if (this.dc && this.dc.readyState === 'open') {
+      this.dc.send(JSON.stringify({
+        type: 'session.update',
+        session: {
+          turn_detection: {
+            type: 'server_vad',
+            threshold: 0.5,
+            prefix_padding_ms: 300,
+            silence_duration_ms: 500
+          }
+        }
+      }));
+    }
+  }
+  
+  // Start push-to-talk recording
+  startPushToTalk() {
+    if (!this.pushToTalkMode || !this.audioStream) {
+      console.log('Push-to-talk not available');
+      return false;
+    }
+    
+    if (this.isPushToTalkActive) {
+      console.log('Push-to-talk already active');
+      return false;
+    }
+    
+    this.isPushToTalkActive = true;
+    this.audioBuffer = [];
+    console.log('Push-to-talk started - recording audio');
+    
+    // Send input_audio_buffer.clear to clear any previous audio
+    if (this.dc && this.dc.readyState === 'open') {
+      this.dc.send(JSON.stringify({
+        type: 'input_audio_buffer.clear'
+      }));
+    }
+    
+    return true;
+  }
+  
+  // Stop push-to-talk and process audio
+  stopPushToTalk() {
+    if (!this.pushToTalkMode || !this.isPushToTalkActive) {
+      console.log('Push-to-talk not active');
+      return false;
+    }
+    
+    this.isPushToTalkActive = false;
+    console.log('Push-to-talk stopped - processing audio');
+    
+    // Commit the audio buffer and trigger response
+    if (this.dc && this.dc.readyState === 'open') {
+      // Commit the audio buffer
+      this.dc.send(JSON.stringify({
+        type: 'input_audio_buffer.commit'
+      }));
+      
+      // Trigger AI response
+      setTimeout(() => {
+        this.dc.send(JSON.stringify({
+          type: 'response.create',
+          response: {
+            modalities: ['text', 'audio']
+          }
+        }));
+      }, 100);
+    }
+    
+    return true;
   }
 }
 
